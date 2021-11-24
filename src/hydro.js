@@ -133,7 +133,7 @@ function drawTimeline(svg, data) {
     svg.append("g").attr("transform", `translate(0,${pxY - margin})`).call(d3.axisBottom(scX).ticks(10).tickFormat(tickFormat))
 
 }
-function installLinkHandler(svg, hydroData, priceData, mapRegions, sc) {
+function installLinkHandler(svg, hydroData, priceData, mapRegions) {
     let pxX = svg.attr("width") - 2 * margin
     let pxY = svg.attr("height") - 2 * margin
 
@@ -151,13 +151,13 @@ function installLinkHandler(svg, hydroData, priceData, mapRegions, sc) {
         let currentTime = circle.data()[0].date
         mapRegions.each(function (_, i, n) {
             let sel = d3.select(n[i])
-            let field = sel.attr("class").slice(0,3)
+            let field = sel.attr("class").slice(0, 3)
             sel.selectAll("path").attr("fill", () =>
-                sc(hydroData.filter(d => d.date.getTime() == currentTime.getTime())[0][field])
+                mapColorScale(hydroData.filter(d => d.date.getTime() == currentTime.getTime())[0][field])
             )
-            let price = priceData.filter(d=> d.date.getTime() == currentTime.getTime())[0][field]
-            console.log(price)
-            sel.select(".price").text(priceData.filter(d => d.date.getTime() == currentTime.getTime())[0][field].toFixed(4))
+            try {
+                sel.select(".price").text(priceData.filter(d => d.date.getTime() == currentTime.getTime())[0][field].toFixed(4))
+            } catch (e) { }
 
 
         })
@@ -185,55 +185,59 @@ function installLinkHandler(svg, hydroData, priceData, mapRegions, sc) {
             mouseHeld = false
         })
 }
-// function updateLinkHandler(svg, data, mapRegions, sc) {
-//     let pxX = svg.attr("width") - 2 * margin
-//     let pxY = svg.attr("height") - 2 * margin
+function updateLinkHandler(svg, hydroData, priceData, mapRegions, sc) {
+    let pxX = svg.attr("width") - 2 * margin
+    let pxY = svg.attr("height") - 2 * margin
 
-//     let mouseHeld = false
+    let mouseHeld = false
 
-//     function updateMap(event) {
-//         let pt = d3.pointer(event);
-//         let minimum = 5000
-//         let circle = d3.selectAll("circle").each((d, i, n) => {
-//             let sel = d3.select(n[i])
-//             let xDistance = Math.abs(sel.attr("cx") - pt[0])
-//             minimum = Math.min(minimum, xDistance)
-//         }).filter((d, i, n) =>
-//             Math.abs(d3.select(n[i]).attr("cx") - pt[0]) == minimum)
-//         data.currentTime = circle.data()[0].date
-//         mapRegions.each(function (_, i, n) {
-//             let sel = d3.select(n[i])
-//             let field = sel.attr("class")
-//             sel.selectAll("path").attr("fill", () => {
-//                 return sc(data.filter(d => d.date == data.currentTime)[0][field])
-//             })
+    function updateMap(event) {
+        let pt = d3.pointer(event);
+        let minimum = 5000
+        let circle = d3.selectAll("circle").each((d, i, n) => {
+            let sel = d3.select(n[i])
+            let xDistance = Math.abs(sel.attr("cx") - pt[0])
+            minimum = Math.min(minimum, xDistance)
+        }).filter((d, i, n) =>
+            Math.abs(d3.select(n[i]).attr("cx") - pt[0]) == minimum)
+        let currentTime = circle.data()[0].date
+        mapRegions.each(function (_, i, n) {
+            let sel = d3.select(n[i])
+            let field = sel.attr("class").slice(0, 3)
+            sel.selectAll("path").attr("fill", () =>
+                sc(hydroData.filter(d => d.date.getTime() == currentTime.getTime())[0][field])
+            )
+            let price = priceData.filter(d => d.date.getTime() == currentTime.getTime())[0][field]
+            console.log(price)
+            sel.select(".price").text(priceData.filter(d => d.date.getTime() == currentTime.getTime())[0][field].toFixed(4))
 
-//         })
 
-//     }
+        })
 
-//     let hotzone = svg.select("rect").attr("cursor", "crosshair")
-//         .attr("x", margin).attr("y", margin)
-//         .attr("width", pxX).attr("height", pxY)
-//         .attr("visibility", "hidden")
-//         .attr("pointer-events", "all")
-//         .on("mousemove", function (event) {
-//             if (mouseHeld) {
-//                 updateMap(event)
-//             }
-//         })
-//         .on("mousedown", function (event) {
-//             mouseHeld = true
-//             updateMap(event)
-//         })
-//         .on("mouseup", function () {
-//             mouseHeld = false
-//         })
-//         .on("mouseleave", function () {
-//             mouseHeld = false
-//         })
+    }
 
-// }
+    let hotzone = svg.select("rect").attr("cursor", "crosshair")
+        .attr("x", margin).attr("y", margin)
+        .attr("width", pxX).attr("height", pxY)
+        .attr("visibility", "hidden")
+        .attr("pointer-events", "all")
+        .on("mousemove", function (event) {
+            if (mouseHeld) {
+                updateMap(event)
+            }
+        })
+        .on("mousedown", function (event) {
+            mouseHeld = true
+            updateMap(event)
+        })
+        .on("mouseup", function () {
+            mouseHeld = false
+        })
+        .on("mouseleave", function () {
+            mouseHeld = false
+        })
+
+}
 
 function drawCircles(svg, data, accX, accY, sc) {
     let color = sc(Infinity);
@@ -245,7 +249,7 @@ function drawCircles(svg, data, accX, accY, sc) {
 
 async function updateGraphs(year) {
     let hydroData = await getHydroData(year)
-    let priceData = await getPriceData("2021")
+    let priceData = await getPriceData(year)
 
     let graphSvg = d3.select("#hydroGraphs")
 
@@ -263,7 +267,8 @@ async function updateGraphs(year) {
         circles = circles.enter().append("circle")
             .attr("r", 5)
             .attr("cx", d => scX(d.date))
-            .attr("cy", d => scY(d[region]));
+            .attr("cy", d => scY(d[region]))
+            .attr("fill", colorScale(region));
 
         // Update existing circles
         circles.attr("cx", d => scX(d.date)).attr("cy", d => scY(d[region]))
@@ -272,28 +277,30 @@ async function updateGraphs(year) {
         let lnMkr = d3.line().curve(d3.curveNatural)
             .x(d => scX(d.date)).y(d => scY(d[region]));
         graphSvg.selectAll(`path .${region}`).attr("fill", "none")
-            .attr("d", lnMkr(data));
+            .attr("d", lnMkr(hydroData));
         // drawGraph(svg, hydroData, region)
     })
-
-    // updateLinkHandler(d3.select("#norway"), priceData, zones,)
+    let mapRegions = d3.selectAll("g").filter(".map")
+    updateLinkHandler(d3.select("#norway"), hydroData, priceData, mapRegions)
 }
 
-function fillButton() {
-    d3.select("#selectYear").selectAll('myOptions').data(years).enter().append("option").text(d => d).attr("value", d => d)
-        .on("change", function () {
-            let year = d3.select(this).property("value")
-            updateGraphs(year)
-        })
+function fillDropDown() {
+    let dropDown = d3.select("#selectYear")
+    dropDown.selectAll('myOptions').data(years).enter().append("option").text(d => d).attr("value", d => d)
+    dropDown.on("change", function () {
+        let year = d3.select(this).property("value")
+        updateGraphs(year)
+    })
+    console.log(dropDown)
 }
 
 async function main() {
     let minMaxData = await getMinMaxData()
-    fillButton()
+    // fillDropDown()
 
     let mapSvg = await drawMap()
-    let mapColorScale = d3.scaleLinear().domain([0, 1])
-        .range(["white", "blue"])
+    // let mapColorScale = d3.scaleLinear().domain([0, 1])
+    //     .range(["white", "blue"])
 
     let hydroData = await getHydroData("2021")
     let priceData = await getPriceData("2021")
@@ -312,7 +319,7 @@ async function main() {
         initializeMap(d, mapColorScale, mapSvg, hydroData, priceData))
     let mapRegions = mapSvg.selectAll("g").filter(".map")
 
-    graphSvg.call(installLinkHandler, hydroData, priceData, mapRegions, mapColorScale);
+    graphSvg.call(installLinkHandler, hydroData, priceData, mapRegions);
 
 }
 const mapColorScale = d3.scaleLinear().domain([0, 1])
