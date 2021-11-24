@@ -1,7 +1,7 @@
 function getDateOfISOWeek(w, y) {
-    var simple = new Date(y, 0, 1 + (w - 1) * 7);
-    var dow = simple.getDay();
-    var ISOweekStart = simple;
+    let simple = new Date(y, 0, 1 + (w - 1) * 7);
+    let dow = simple.getDay();
+    let ISOweekStart = simple;
     if (dow <= 4)
         ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
     else
