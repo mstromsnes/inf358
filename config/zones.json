@@ -1,0 +1,206 @@
+{
+    "NO": {
+        "capacity": {
+            "biomass": 113.3,
+            "coal": 0,
+            "gas": 473.4,
+            "geothermal": 0,
+            "hydro": 33033,
+            "hydro storage": 1438,
+            "nuclear": 0,
+            "oil": 0,
+            "solar": 160,
+            "unknown": 112.6,
+            "wind": 3977
+        },
+        "contributors": [
+            "https://github.com/corradio"
+        ],
+        "parsers": {
+            "consumption": "ENTSOE.fetch_consumption",
+            "consumptionForecast": "ENTSOE.fetch_consumption_forecast",
+            "generationForecast": "ENTSOE.fetch_generation_forecast",
+            "price": "ENTSOE.fetch_price",
+            "production": "ENTSOE.fetch_production",
+            "productionPerModeForecast": "ENTSOE.fetch_wind_solar_forecasts"
+        },
+        "subZoneNames": [
+            "NO1",
+            "NO2",
+            "NO3",
+            "NO4",
+            "NO5"
+        ],
+        "timezone": "Europe/Oslo"
+    },
+    "NO1": {
+        "bounding_box": [
+            [
+                7.610326512408815,
+                58.38472727500012
+            ],
+            [
+                13.388184448000061,
+                63.128901615737796
+            ]
+        ],
+        "capacity": {
+            "biomass": 46,
+            "coal": 0,
+            "gas": 0,
+            "geothermal": 0,
+            "hydro": 3751,
+            "hydro storage": 1,
+            "nuclear": 0,
+            "oil": 0,
+            "solar": 0,
+            "unknown": 0,
+            "wind": 209
+        },
+        "parsers": {
+            "consumption": "ENTSOE.fetch_consumption",
+            "consumptionForecast": "ENTSOE.fetch_consumption_forecast",
+            "generationForecast": "ENTSOE.fetch_generation_forecast",
+            "price": "ENTSOE.fetch_price",
+            "production": "ENTSOE.fetch_production",
+            "productionPerModeForecast": "ENTSOE.fetch_wind_solar_forecasts"
+        },
+        "timezone": null
+    },
+    "NO2": {
+        "bounding_box": [
+            [
+                4.570648634000037,
+                57.49315013200005
+            ],
+            [
+                11.014170769000089,
+                60.73048157269916
+            ]
+        ],
+        "capacity": {
+            "biomass": 22.3,
+            "coal": 0,
+            "gas": 35.8,
+            "geothermal": 0,
+            "hydro": 10468,
+            "hydro storage": 892,
+            "nuclear": 0,
+            "oil": 0,
+            "solar": 0,
+            "unknown": 14,
+            "wind": 1287
+        },
+        "parsers": {
+            "consumption": "ENTSOE.fetch_consumption",
+            "consumptionForecast": "ENTSOE.fetch_consumption_forecast",
+            "generationForecast": "ENTSOE.fetch_generation_forecast",
+            "price": "ENTSOE.fetch_price",
+            "production": "ENTSOE.fetch_production",
+            "productionPerModeForecast": "ENTSOE.fetch_wind_solar_forecasts"
+        },
+        "timezone": null
+    },
+    "NO3": {
+        "bounding_box": [
+            [
+                4.143809441000116,
+                60.43027545054864
+            ],
+            [
+                14.661440063000043,
+                65.490423895
+            ]
+        ],
+        "capacity": {
+            "biomass": 17.7,
+            "coal": 0,
+            "gas": 0,
+            "geothermal": 0,
+            "hydro": 4709,
+            "hydro storage": 87,
+            "nuclear": 0,
+            "oil": 0,
+            "solar": 0,
+            "unknown": 46.8,
+            "wind": 1788
+        },
+        "parsers": {
+            "consumption": "ENTSOE.fetch_consumption",
+            "consumptionForecast": "ENTSOE.fetch_consumption_forecast",
+            "generationForecast": "ENTSOE.fetch_generation_forecast",
+            "price": "ENTSOE.fetch_price",
+            "production": "ENTSOE.fetch_production",
+            "productionPerModeForecast": "ENTSOE.fetch_wind_solar_forecasts"
+        },
+        "timezone": null
+    },
+    "NO4": {
+        "bounding_box": [
+            [
+                11.018809441000087,
+                63.879640651798496
+            ],
+            [
+                31.576996290000153,
+                71.6652692730001
+            ]
+        ],
+        "capacity": {
+            "biomass": 0.3,
+            "coal": 0,
+            "gas": 248,
+            "geothermal": 0,
+            "hydro": 5197,
+            "hydro storage": 2,
+            "nuclear": 0,
+            "oil": 0,
+            "solar": 0,
+            "unknown": 39.3,
+            "wind": 693
+        },
+        "parsers": {
+            "consumption": "ENTSOE.fetch_consumption",
+            "consumptionForecast": "ENTSOE.fetch_consumption_forecast",
+            "generationForecast": "ENTSOE.fetch_generation_forecast",
+            "price": "ENTSOE.fetch_price",
+            "production": "ENTSOE.fetch_production",
+            "productionPerModeForecast": "ENTSOE.fetch_wind_solar_forecasts"
+        },
+        "timezone": null
+    },
+    "NO5": {
+        "bounding_box": [
+            [
+                4.27686608200014,
+                59.59392557929161
+            ],
+            [
+                10.10473435728148,
+                62.338893003403086
+            ]
+        ],
+        "capacity": {
+            "biomass": 27,
+            "coal": 0,
+            "gas": 189.6,
+            "geothermal": 0,
+            "hydro": 7658,
+            "hydro storage": 457,
+            "nuclear": 0,
+            "oil": 0,
+            "solar": 0,
+            "unknown": 12.5,
+            "wind": 0
+        },
+        "parsers": {
+            "consumption": "ENTSOE.fetch_consumption",
+            "consumptionForecast": "ENTSOE.fetch_consumption_forecast",
+            "generationForecast": "ENTSOE.fetch_generation_forecast",
+            "price": "ENTSOE.fetch_price",
+            "production": "ENTSOE.fetch_production",
+            "productionPerModeForecast": "ENTSOE.fetch_wind_solar_forecasts"
+        },
+        "timezone": null
+    }
+}
