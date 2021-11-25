@@ -4,46 +4,6 @@ function makeTimeScale(data, accessor, range) {
         .range(range).nice()
 }
 
-function drawGraph(svg, data, region) {
-
-    let pxX = +svg.attr("width") - margin;
-    let pxY = +svg.attr("height") - margin;
-
-    let scX = makeTimeScale(data, d => d.date, [margin, pxX]);
-    let scY = d3.scaleLinear().domain([0, 1]).range([pxY, margin]).nice()
-
-    let drawData = function (g, accessor, curve) {
-        // draw circles
-        g.selectAll("circle").data(data).enter()
-            .append("circle")
-            .attr("r", 5)
-            .attr("cx", d => scX(d.date))
-            .attr("cy", accessor);
-        // draw lines
-        let lnMkr = d3.line().curve(curve)
-            .x(d => scX(d.date)).y(accessor);
-        g.append("path").attr("fill", "none")
-            .attr("d", lnMkr(data));
-    }
-
-    let g = svg.append("g").classed(region, true)
-    drawData(g, d => scY(d[region]), d3.curveNatural)
-    g.selectAll("circle").attr("fill", colorScale(region));
-    g.selectAll("path").attr("stroke", "cyan");
-
-    svg.append("g")
-        .call(d3.axisLeft(scY))
-        .attr("transform", "translate(" + margin + ",0)")
-
-    svg.append("g").call(d3.axisBottom(scX).ticks(data.length).tickFormat(d3.timeFormat("%V - %Y")))
-        .attr("transform", "translate(0," + pxY + ")")
-        .selectAll("text")
-        .attr("transform", "translate(0,10),rotate(-30)");
-
-    return svg
-}
-
-
 async function drawMap() {
     let svg = d3.selectAll("#norway")
     let pxX = +svg.attr("width")
@@ -205,11 +165,13 @@ function updateLinkHandler(svg, hydroData, priceData, mapRegions, sc) {
             let sel = d3.select(n[i])
             let field = sel.attr("class").slice(0, 3)
             sel.selectAll("path").attr("fill", () =>
-                sc(hydroData.filter(d => d.date.getTime() == currentTime.getTime())[0][field])
+                mapColorScale(hydroData.filter(d => d.date.getTime() == currentTime.getTime())[0][field])
             )
-            let price = priceData.filter(d => d.date.getTime() == currentTime.getTime())[0][field]
-            console.log(price)
-            sel.select(".price").text(priceData.filter(d => d.date.getTime() == currentTime.getTime())[0][field].toFixed(4))
+            // Price data may not overlap with hydrodata
+            try {
+                sel.select(".price").text(priceData.filter(d => d.date.getTime() == currentTime.getTime())[0][field].toFixed(4))
+
+            } catch (e) { }
 
 
         })
@@ -247,41 +209,102 @@ function drawCircles(svg, data, accX, accY, sc) {
         .attr("fill", color).attr("fill-opacity", 0.4);
 }
 
-async function updateGraphs(year) {
+function drawUpdateData(svg, hydroData, curve) {
+    let pxX = +svg.attr("width") - margin;
+    let pxY = +svg.attr("height") - margin;
+
+    let scX = makeTimeScale(hydroData, d => d.date, [margin, pxX]);
+    let scY = d3.scaleLinear().domain([0, 1]).range([pxY, margin]).nice()
+    // let circles = svg.selectAll(`g`).selectAll("circle").data(hydroData)
+    svg.each(function (d) {
+        let region = d
+        // Circle logic
+        {
+            let circles = d3.select(this).selectAll("circle").data(hydroData)
+            // Remove excess circles
+            circles.exit().remove()
+
+            // Add new circles
+            circles.enter().append("circle")
+                .attr("r", 5)
+                .attr("cx", d => scX(d.date))
+                .attr("cy", d => scY(d[region]))
+                .attr("fill", colorScale(region));
+
+            // Update existing circles
+            circles
+                .attr("cx", d => scX(d.date))
+                .attr("cy", d => scY(d[region]))
+        }
+        // Line Logic
+        {
+            // Update lines
+            let lnMkr = d3.line().curve(curve)
+                .x(d => scX(d.date)).y(d => scY(d[region]));
+            let lines = d3.select(this).selectAll("path").data(region)
+
+            // Remove excess lines
+            lines.exit().remove()
+
+            // Add new lines
+            lines.enter().append("path")
+                .attr("fill", "none")
+                .attr("stroke", d => colorScale(region))
+                .attr("d", lnMkr(hydroData))
+
+            // Update existing lines
+            lines.attr("d", lnMkr(hydroData))
+        }
+        // Axis logic
+        {
+            let xAxis = d3.select(this).selectAll("g.x").data([0])
+            let yAxis = d3.select(this).selectAll("g.y").data([0])
+
+            xAxis.enter().append("g")
+                .attr("class", "x")
+                .call(d3.axisBottom(scX).ticks(hydroData.length).tickFormat(d3.timeFormat("%V - %Y")))
+                .attr("transform", "translate(0," + pxY + ")")
+                .selectAll("text")
+                .attr("transform", "translate(0,10),rotate(-30)")
+            yAxis.enter().append("g")
+                .attr("class", "y")
+                .call(d3.axisLeft(scY))
+                .attr("transform", "translate(" + margin + ",0)")
+
+            xAxis.call(d3.axisBottom(scX).ticks(hydroData.length).tickFormat(d3.timeFormat("%V - %Y")))
+                .selectAll("text")
+                .attr("transform", "translate(0,10),rotate(-30)")
+            yAxis.call(d3.axisLeft(scY))
+
+        }
+    })
+}
+async function createUpdateGraphs(year) {
     let hydroData = await getHydroData(year)
     let priceData = await getPriceData(year)
 
     let graphSvg = d3.select("#hydroGraphs")
+    let height = Math.floor(graphSvg.attr("height") / zones.length)
 
-    zones.forEach((region) => {
-        let pxX = +graphSvg.attr("width") - margin;
-        let pxY = +graphSvg.attr("height") - margin;
+    let svg = graphSvg.selectAll("g.graph").data(zones)
 
-        let scX = makeTimeScale(hydroData, d => d.date, [margin, pxX]);
-        let scY = d3.scaleLinear().domain([0, 1]).range([pxY, margin]).nice()
-        let circles = graphSvg.selectAll(`g .${region}`).selectAll("circle").data(hydroData)
-        // Remove excess circles
-        circles.exit().remove()
+    // Remove surplus (shouldn't happen)
+    svg.exit().remove()
 
-        // Add new circles
-        circles = circles.enter().append("circle")
-            .attr("r", 5)
-            .attr("cx", d => scX(d.date))
-            .attr("cy", d => scY(d[region]))
-            .attr("fill", colorScale(region));
+    // Add new (happens first call)
+    if (svg.enter().size() > 0)
+        svg.enter().append("g")
+            .attr("class", "graph")
+            .attr("height", height)
+            .attr("width", graphSvg.attr("width"))
+            .attr("transform", (d, i) => `translate(0,${height * i})`)
+            .call(drawUpdateData, hydroData, d3.curveNatural)
 
-        // Update existing circles
-        circles.attr("cx", d => scX(d.date)).attr("cy", d => scY(d[region]))
-
-        // Update lines
-        let lnMkr = d3.line().curve(d3.curveNatural)
-            .x(d => scX(d.date)).y(d => scY(d[region]));
-        graphSvg.selectAll(`path .${region}`).attr("fill", "none")
-            .attr("d", lnMkr(hydroData));
-        // drawGraph(svg, hydroData, region)
-    })
-    let mapRegions = d3.selectAll("g").filter(".map")
-    updateLinkHandler(d3.select("#norway"), hydroData, priceData, mapRegions)
+    // Update existing graphs
+    if (svg.size() > 0)
+        svg.call(drawUpdateData, hydroData, d3.curveNatural)
+    let mapRegions = d3.selectAll("g.map")
+    updateLinkHandler(d3.select("#hydroGraphs"), hydroData, priceData, mapRegions)
 }
 
 function fillDropDown() {
@@ -289,14 +312,14 @@ function fillDropDown() {
     dropDown.selectAll('myOptions').data(years).enter().append("option").text(d => d).attr("value", d => d)
     dropDown.on("change", function () {
         let year = d3.select(this).property("value")
-        updateGraphs(year)
+        createUpdateGraphs(year)
     })
     console.log(dropDown)
 }
 
 async function main() {
     let minMaxData = await getMinMaxData()
-    // fillDropDown()
+    fillDropDown()
 
     let mapSvg = await drawMap()
     // let mapColorScale = d3.scaleLinear().domain([0, 1])
@@ -306,14 +329,16 @@ async function main() {
     let priceData = await getPriceData("2021")
     let graphSvg = d3.select("#hydroGraphs")
 
-    zones.forEach((region, index) => {
-        let height = Math.floor(graphSvg.attr("height") / zones.length)
-        let svg = graphSvg.append("g")
-            .attr("height", height)
-            .attr("width", graphSvg.attr("width"))
-            .attr("transform", `translate(0,${height * index})`)
-        drawGraph(svg, hydroData, region)
-    })
+    createUpdateGraphs("2021")
+    // zones.forEach((region, index) => {
+    //     let height = Math.floor(graphSvg.attr("height") / zones.length)
+    //     let svg = graphSvg.append("g")
+    //         .attr("height", height)
+    //         .attr("width", graphSvg.attr("width"))
+    //         .attr("transform", `translate(0,${height * index})`)
+    //         .attr("class", `graph ${region}`)
+    //     drawGraph(svg, hydroData, region)
+    // })
 
     zones.forEach(d =>
         initializeMap(d, mapColorScale, mapSvg, hydroData, priceData))
