@@ -79,21 +79,7 @@ function initializeMap(region, colorScale, svg, hydroData, priceData) {
 
 }
 
-function drawTimeline(svg, data) {
-    let margin = 18
-    let timeData = data.map(d => d.date)
-    let pxX = +svg.attr("width")
-    let pxY = +svg.attr("height")
-    let scX = d3.scaleLinear().domain(timeData).range([0, pxX])
-    function tickFormat(d) {
-        let date = new Date(d)
-        console.log(date.getMonth() + " - " + date.getFullYear())
-        return date.getMonth() + 1 + " - " + date.getFullYear()
-    }
-    svg.append("g").attr("transform", `translate(0,${pxY - margin})`).call(d3.axisBottom(scX).ticks(10).tickFormat(tickFormat))
-
-}
-function installLinkHandler(svg, hydroData, priceData, mapRegions) {
+function installLinkHandler(svg, hydroData, priceData, mapRegions, sc) {
     let pxX = svg.attr("width") - 2 * margin
     let pxY = svg.attr("height") - 2 * margin
 
@@ -112,12 +98,21 @@ function installLinkHandler(svg, hydroData, priceData, mapRegions) {
         mapRegions.each(function (_, i, n) {
             let sel = d3.select(n[i])
             let field = sel.attr("class").slice(0, 3)
-            sel.selectAll("path").attr("fill", () =>
-                mapColorScale(hydroData.filter(d => d.date.getTime() == currentTime.getTime())[0][field])
+            sel.selectAll("path").attr("fill", (d, i, n) => {
+                let currentColor = d3.select(n[i]).attr("fill")
+                try {
+                    return sc(hydroData.filter(d => d.date.getTime() == currentTime.getTime())[0][field])
+
+                } catch (e) {
+                    return currentColor
+                }
+
+            }
             )
             try {
-                sel.select(".price").text(priceData.filter(d => d.date.getTime() == currentTime.getTime())[0][field].toFixed(4))
-            } catch (e) { }
+                sel.select(".price").text((+priceData.filter(d => d.date.getTime() == currentTime.getTime())[0][field]).toFixed(4))
+            } catch (e) {
+            }
 
 
         })
@@ -145,7 +140,7 @@ function installLinkHandler(svg, hydroData, priceData, mapRegions) {
             mouseHeld = false
         })
 }
-function updateLinkHandler(svg, hydroData, priceData, mapRegions, sc) {
+function updateLinkHandler(svg, colorData, textData, mapRegions, sc) {
     let pxX = svg.attr("width") - 2 * margin
     let pxY = svg.attr("height") - 2 * margin
 
@@ -164,12 +159,20 @@ function updateLinkHandler(svg, hydroData, priceData, mapRegions, sc) {
         mapRegions.each(function (_, i, n) {
             let sel = d3.select(n[i])
             let field = sel.attr("class").slice(0, 3)
-            sel.selectAll("path").attr("fill", () =>
-                mapColorScale(hydroData.filter(d => d.date.getTime() == currentTime.getTime())[0][field])
+            sel.selectAll("path").attr("fill", () => {
+                let currentColor = d3.select(n[i]).attr("fill")
+                try {
+                    return sc(colorData.filter(d => d.date.getTime() == currentTime.getTime())[0][field])
+
+                } catch (e) {
+                    return currentColor
+                }
+
+            }
             )
             // Price data may not overlap with hydrodata
             try {
-                sel.select(".price").text(priceData.filter(d => d.date.getTime() == currentTime.getTime())[0][field].toFixed(4))
+                sel.select(".price").text((+textData.filter(d => d.date.getTime() == currentTime.getTime())[0][field]).toFixed(4))
 
             } catch (e) { }
 
@@ -178,58 +181,73 @@ function updateLinkHandler(svg, hydroData, priceData, mapRegions, sc) {
 
     }
 
-    let hotzone = svg.select("rect").attr("cursor", "crosshair")
-        .attr("x", margin).attr("y", margin)
-        .attr("width", pxX).attr("height", pxY)
-        .attr("visibility", "hidden")
-        .attr("pointer-events", "all")
-        .on("mousemove", function (event) {
-            if (mouseHeld) {
+    let hotzone = svg.select("rect").data([0])
+    hotzone.exit().remove
+    if (hotzone.enter().size() > 0)
+        hotzone.enter().append("rect")
+            .attr("cursor", "crosshair")
+            .attr("x", margin).attr("y", margin)
+            .attr("width", pxX).attr("height", pxY)
+            .attr("visibility", "hidden")
+            .attr("pointer-events", "all")
+            .on("mousemove", function (event) {
+                if (mouseHeld) {
+                    updateMap(event)
+                }
+            })
+            .on("mousedown", function (event) {
+                mouseHeld = true
                 updateMap(event)
-            }
-        })
-        .on("mousedown", function (event) {
-            mouseHeld = true
-            updateMap(event)
-        })
-        .on("mouseup", function () {
-            mouseHeld = false
-        })
-        .on("mouseleave", function () {
-            mouseHeld = false
-        })
+            })
+            .on("mouseup", function () {
+                mouseHeld = false
+            })
+            .on("mouseleave", function () {
+                mouseHeld = false
+            })
+    if (hotzone.size() > 0)
+        hotzone
+            .on("mousemove", function (event) {
+                if (mouseHeld) {
+                    updateMap(event)
+                }
+            })
+            .on("mousedown", function (event) {
+                mouseHeld = true
+                updateMap(event)
+            })
+            .on("mouseup", function () {
+                mouseHeld = false
+            })
+            .on("mouseleave", function () {
+                mouseHeld = false
+            })
 
 }
 
-function drawCircles(svg, data, accX, accY, sc) {
-    let color = sc(Infinity);
-    return svg.selectAll("circle").data(data).enter()
-        .append("circle")
-        .attr("r", 5).attr("cx", accX).attr("cy", accY)
-        .attr("fill", color).attr("fill-opacity", 0.4);
-}
-
-function drawUpdateData(svg, hydroData, curve) {
+function drawUpdateData(svg, data, curve, classTag, circles, lines) {
     let pxX = +svg.attr("width") - margin;
     let pxY = +svg.attr("height") - margin;
 
-    let scX = makeTimeScale(hydroData, d => d.date, [margin, pxX]);
+    let scX = makeTimeScale(data, d => d.date, [margin, pxX]);
     let scY = d3.scaleLinear().domain([0, 1]).range([pxY, margin]).nice()
     // let circles = svg.selectAll(`g`).selectAll("circle").data(hydroData)
     svg.each(function (d) {
         let region = d
         // Circle logic
+        if(circles)
         {
-            let circles = d3.select(this).selectAll("circle").data(hydroData)
+            let circles = d3.select(this).selectAll("circle."+classTag).data(data)
             // Remove excess circles
             circles.exit().remove()
 
             // Add new circles
             circles.enter().append("circle")
-                .attr("r", 5)
+                .attr("r", 3)
                 .attr("cx", d => scX(d.date))
                 .attr("cy", d => scY(d[region]))
-                .attr("fill", colorScale(region));
+                .classed(classTag, true)
+                .attr("fill", circleColors(classTag));
 
             // Update existing circles
             circles
@@ -237,11 +255,11 @@ function drawUpdateData(svg, hydroData, curve) {
                 .attr("cy", d => scY(d[region]))
         }
         // Line Logic
-        {
+        if (lines) {
             // Update lines
             let lnMkr = d3.line().curve(curve)
                 .x(d => scX(d.date)).y(d => scY(d[region]));
-            let lines = d3.select(this).selectAll("path").data(region)
+            let lines = d3.select(this).selectAll("path."+classTag).data(region)
 
             // Remove excess lines
             lines.exit().remove()
@@ -249,11 +267,12 @@ function drawUpdateData(svg, hydroData, curve) {
             // Add new lines
             lines.enter().append("path")
                 .attr("fill", "none")
-                .attr("stroke", d => colorScale(region))
-                .attr("d", lnMkr(hydroData))
+                .attr("stroke", d => circleColors(classTag))
+                .classed(classTag,true)
+                .attr("d", lnMkr(data))
 
             // Update existing lines
-            lines.attr("d", lnMkr(hydroData))
+            lines.attr("d", lnMkr(data))
         }
         // Axis logic
         {
@@ -262,7 +281,7 @@ function drawUpdateData(svg, hydroData, curve) {
 
             xAxis.enter().append("g")
                 .attr("class", "x")
-                .call(d3.axisBottom(scX).ticks(hydroData.length).tickFormat(d3.timeFormat("%V - %Y")))
+                .call(d3.axisBottom(scX).ticks(data.length).tickFormat(d3.timeFormat("%V")))
                 .attr("transform", "translate(0," + pxY + ")")
                 .selectAll("text")
                 .attr("transform", "translate(0,10),rotate(-30)")
@@ -271,7 +290,7 @@ function drawUpdateData(svg, hydroData, curve) {
                 .call(d3.axisLeft(scY))
                 .attr("transform", "translate(" + margin + ",0)")
 
-            xAxis.call(d3.axisBottom(scX).ticks(hydroData.length).tickFormat(d3.timeFormat("%V - %Y")))
+            xAxis.call(d3.axisBottom(scX).ticks(data.length).tickFormat(d3.timeFormat("%V")))
                 .selectAll("text")
                 .attr("transform", "translate(0,10),rotate(-30)")
             yAxis.call(d3.axisLeft(scY))
@@ -279,11 +298,8 @@ function drawUpdateData(svg, hydroData, curve) {
         }
     })
 }
-async function createUpdateGraphs(year) {
-    let hydroData = await getHydroData(year)
-    let priceData = await getPriceData(year)
+async function createUpdateGraphs(graphSvg, dataSet, linkedData, classTag, circles, lines, handler) {
 
-    let graphSvg = d3.select("#hydroGraphs")
     let height = Math.floor(graphSvg.attr("height") / zones.length)
 
     let svg = graphSvg.selectAll("g.graph").data(zones)
@@ -298,57 +314,61 @@ async function createUpdateGraphs(year) {
             .attr("height", height)
             .attr("width", graphSvg.attr("width"))
             .attr("transform", (d, i) => `translate(0,${height * i})`)
-            .call(drawUpdateData, hydroData, d3.curveNatural)
+            .call(drawUpdateData, dataSet, d3.curveNatural, classTag, circles, lines)
 
     // Update existing graphs
     if (svg.size() > 0)
-        svg.call(drawUpdateData, hydroData, d3.curveNatural)
+        svg.call(drawUpdateData, dataSet, d3.curveNatural, classTag, circles, lines)
     let mapRegions = d3.selectAll("g.map")
-    updateLinkHandler(d3.select("#hydroGraphs"), hydroData, priceData, mapRegions)
+    let sc = d3.selectAll(svg._parents).attr("id") == "hydroGraphs" ? mapColorScale : altMapColorScale
+    if (handler)
+        updateLinkHandler(graphSvg, dataSet, linkedData, mapRegions, sc)
 }
 
-function fillDropDown() {
+async function fillDropDown() {
     let dropDown = d3.select("#selectYear")
     dropDown.selectAll('myOptions').data(years).enter().append("option").text(d => d).attr("value", d => d)
-    dropDown.on("change", function () {
+
+    dropDown.on("change", async function () {
         let year = d3.select(this).property("value")
-        createUpdateGraphs(year)
+        let [hydroData, priceData, minMaxData] = await Promise.all([getHydroData(year), getPriceData(year), getMinMaxData(year)])
+        createUpdateGraphs(d3.select("#hydroGraphs"), hydroData, priceData, "hydro", true, true, true)
+        createUpdateGraphs(d3.select("#priceGraphs"), priceData, hydroData, "price", true, true, true)
+        createUpdateGraphs(d3.select("#hydroGraphs"), minMaxData.min, priceData, "min", false, true, true)
+        createUpdateGraphs(d3.select("#hydroGraphs"), minMaxData.max, priceData, "max", false, true, true)
     })
     console.log(dropDown)
 }
 
 async function main() {
-    let minMaxData = await getMinMaxData()
+    let minMaxData = await getMinMaxData("2021")
     fillDropDown()
 
-    let mapSvg = await drawMap()
-    // let mapColorScale = d3.scaleLinear().domain([0, 1])
-    //     .range(["white", "blue"])
+    // let mapSvg = await drawMap()
 
     let hydroData = await getHydroData("2021")
     let priceData = await getPriceData("2021")
-    let graphSvg = d3.select("#hydroGraphs")
+    let hydroGraphSvg = d3.select("#hydroGraphs")
+    let priceGraphSvg = d3.select("#priceGraphs")
 
-    createUpdateGraphs("2021")
-    // zones.forEach((region, index) => {
-    //     let height = Math.floor(graphSvg.attr("height") / zones.length)
-    //     let svg = graphSvg.append("g")
-    //         .attr("height", height)
-    //         .attr("width", graphSvg.attr("width"))
-    //         .attr("transform", `translate(0,${height * index})`)
-    //         .attr("class", `graph ${region}`)
-    //     drawGraph(svg, hydroData, region)
-    // })
+    createUpdateGraphs(hydroGraphSvg, hydroData, priceData, "hydro", true, true, true)
+    createUpdateGraphs(priceGraphSvg, priceData, hydroData, "price", true, true, true)
+    createUpdateGraphs(hydroGraphSvg, minMaxData.min, priceData, "min", false, true, false)
+    createUpdateGraphs(hydroGraphSvg, minMaxData.max, priceData, "max", false, true, false)
 
-    zones.forEach(d =>
-        initializeMap(d, mapColorScale, mapSvg, hydroData, priceData))
-    let mapRegions = mapSvg.selectAll("g").filter(".map")
+    let map = new RegionMap(d3.select("#norway"))
+    // zones.forEach(d =>
+    //     initializeMap(d, mapColorScale, mapSvg, hydroData, priceData))
+    // let mapRegions = mapSvg.selectAll("g").filter(".map")
 
-    graphSvg.call(installLinkHandler, hydroData, priceData, mapRegions);
+    // hydroGraphSvg.call(installLinkHandler, hydroData, priceData, mapRegions, mapColorScale);
+    // priceGraphSvg.call(installLinkHandler, priceData, hydroData, mapRegions, altMapColorScale);
 
 }
 const mapColorScale = d3.scaleLinear().domain([0, 1])
     .range(["white", "blue"])
+const altMapColorScale = d3.scaleLinear().domain([0, 1])
+    .range(["white", "green"])
 const margin = 40
 const zones = [
     "NO1",
@@ -357,14 +377,15 @@ const zones = [
     "NO4",
     "NO5",
 ]
-const colors = [
-    "grey",
-    "white",
-    "red",
-    "blue",
-    "green"
-]
-const colorScale = d3.scaleOrdinal().domain(zones).range(colors)
+const circleColors = d3.scaleOrdinal().domain(["hydro", "price", "min", "max"]).range(["blue","green","red", "yellow"])
+// const colors = [
+//     "grey",
+//     "white",
+//     "red",
+//     "blue",
+//     "green"
+// ]
+// const circleColors = d3.scaleOrdinal().domain(zones).range(colors)
 
 const years = [
     2021,
