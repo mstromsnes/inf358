@@ -1,42 +1,48 @@
 
 class GraphSet {
-    constructor(svg, dataSet, classTag) {
+    constructor(svg, dataSet) {
         let pxX = +svg.attr("width") - margin;
         let pxY = +svg.attr("height") - margin;
 
         this.dataSet = dataSet
-        this.year = "2021"
+        // this.year = "2021"
 
         // let scX = makeTimeScale(data, d => d.date, [margin, pxX]);
         // let scY = d3.scaleLinear().domain([0, 1]).range([pxY, margin]).nice()
-        svg.selectAll("g").data(zones).enter()
-            .call(new Graph, pxX, pxY)
-    }
-    get url() {
-        if (this.dataSet == "hydro")
-            return `../data/${year}/hydro_reservoir.csv`
-        else if (this.dataSet == "price")
-            return `../data/${year}/elspot-prices_${year}_weekly_nok.csv`
-    }
-    changeYear(year) {
-        this.year = year
-        // redraw circles
-    }
-
-    drawGraph(svg, parentHeight, parentWidth) {
-        this.parser(this.year).then(data => {
-            let height = Math.floor(parentHeight / zones.length)
-            let width = parentWidth
-            region = svg.data()
-            // svg.selectAll("g.")
+        // svg.selectAll("g").data(zones).enter()
+        //     .call(new Graph, zones.forEach(zone=> this.dataMapper(zone)), pxX, Math.floor(pxY/zones.length))
+        this.subGraphs = {}
+        zones.forEach((zone, i) => {
+            let height = Math.floor(pxY/zones.length)
+            let g = svg.append("g").attr("width", pxX).attr("height", height).classed(zone, true)
+                .attr("transform", `translate(0,${height * i})`)
+            this.subGraphs[zone] = new Graph(g, this.dataMapper(zone), "green")
         })
     }
-    get parser() {
-        if (this.dataSet == "hydro")
-            return getHydroData
-        if (this.dataSet == "price")
-            return getPriceData
+    dataMapper(zone) {
+        return this.dataSet.map(data => {
+            return {
+                date: data.date,
+                value: data[zone]
+            }
+        })
     }
+    // get url() {
+    //     if (this.dataSet == "hydro")
+    //         return `../data/${year}/hydro_reservoir.csv`
+    //     else if (this.dataSet == "price")
+    //         return `../data/${year}/elspot-prices_${year}_weekly_nok.csv`
+    // }
+    // changeYear(year) {
+    //     this.year = year
+    //     // redraw circles
+    // }
+    // get parser() {
+    //     if (this.dataSet == "hydro")
+    //         return getHydroData
+    //     if (this.dataSet == "price")
+    //         return getPriceData
+    // }
 }
 
 class Graph {
@@ -44,7 +50,7 @@ class Graph {
         this.svg = svg
         this.color = color
         this.pxX = +svg.attr("width")
-        this.pxY = +svg.attr("height")-margin
+        this.pxY = +svg.attr("height") - margin
         this.updateData(data)
 
     }

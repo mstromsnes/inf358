@@ -351,27 +351,32 @@ async function main() {
     // createUpdateGraphs(hydroGraphSvg, minMaxData.max, priceData, "max", false, true, false)
 
     let map = new RegionMap(d3.select("#norway"))
-    let data = await getHydroData("2021")
-    let noData = data.map(d => {
-        return {
-            date: d.date,
-            value: d.NO
-        }
-    })
-    let hydro = new Graph(d3.select("#hydroGraphs"), noData, "green")
-    let no1Data = data.map(d=> {
-        return {
-            date: d.date,
-            value: d.NO1
-        }
-    })
-    hydro.updateData(no1Data)
+    let hydroData = await getHydroData("2021")
+    let hydro = new GraphSet(d3.select("#hydroGraphs"), hydroData)
+    let priceData = await getPriceData("2021")
+    let price = new GraphSet(d3.select("#priceGraphs"), priceData)
+    // let noData = data.map(d => {
+    //     return {
+    //         date: d.date,
+    //         value: d.NO
+    //     }
+    // })
+    // let hydro = new Graph(d3.select("#hydroGraphs"), noData, "green")
+    // let no1Data = data.map(d=> {
+    //     return {
+    //         date: d.date,
+    //         value: d.NO1
+    //     }
+    // })
+    // hydro.updateData(no1Data)
     // zones.forEach(d =>
     //     initializeMap(d, mapColorScale, mapSvg, hydroData, priceData))
     // let mapRegions = mapSvg.selectAll("g").filter(".map")
 
     // hydroGraphSvg.call(installLinkHandler, hydroData, priceData, mapRegions, mapColorScale);
     // priceGraphSvg.call(installLinkHandler, priceData, hydroData, mapRegions, altMapColorScale);
+    console.log(hydroData)
+    console.log(priceData)
 
 }
 main()
