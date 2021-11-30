@@ -1,8 +1,3 @@
-function makeTimeScale(data, accessor, range) {
-    return d3.scaleTime()
-        .domain(d3.extent(data, accessor))
-        .range(range).nice()
-}
 
 async function drawMap() {
     let svg = d3.selectAll("#norway")
@@ -235,9 +230,8 @@ function drawUpdateData(svg, data, curve, classTag, circles, lines) {
     svg.each(function (d) {
         let region = d
         // Circle logic
-        if(circles)
-        {
-            let circles = d3.select(this).selectAll("circle."+classTag).data(data)
+        if (circles) {
+            let circles = d3.select(this).selectAll("circle." + classTag).data(data)
             // Remove excess circles
             circles.exit().remove()
 
@@ -259,7 +253,7 @@ function drawUpdateData(svg, data, curve, classTag, circles, lines) {
             // Update lines
             let lnMkr = d3.line().curve(curve)
                 .x(d => scX(d.date)).y(d => scY(d[region]));
-            let lines = d3.select(this).selectAll("path."+classTag).data(region)
+            let lines = d3.select(this).selectAll("path." + classTag).data(region)
 
             // Remove excess lines
             lines.exit().remove()
@@ -268,7 +262,7 @@ function drawUpdateData(svg, data, curve, classTag, circles, lines) {
             lines.enter().append("path")
                 .attr("fill", "none")
                 .attr("stroke", d => circleColors(classTag))
-                .classed(classTag,true)
+                .classed(classTag, true)
                 .attr("d", lnMkr(data))
 
             // Update existing lines
@@ -346,17 +340,32 @@ async function main() {
 
     // let mapSvg = await drawMap()
 
-    let hydroData = await getHydroData("2021")
-    let priceData = await getPriceData("2021")
-    let hydroGraphSvg = d3.select("#hydroGraphs")
-    let priceGraphSvg = d3.select("#priceGraphs")
+    // let hydroData = await getHydroData("2021")
+    // let priceData = await getPriceData("2021")
+    // let hydroGraphSvg = d3.select("#hydroGraphs")
+    // let priceGraphSvg = d3.select("#priceGraphs")
 
-    createUpdateGraphs(hydroGraphSvg, hydroData, priceData, "hydro", true, true, true)
-    createUpdateGraphs(priceGraphSvg, priceData, hydroData, "price", true, true, true)
-    createUpdateGraphs(hydroGraphSvg, minMaxData.min, priceData, "min", false, true, false)
-    createUpdateGraphs(hydroGraphSvg, minMaxData.max, priceData, "max", false, true, false)
+    // createUpdateGraphs(hydroGraphSvg, hydroData, priceData, "hydro", true, true, true)
+    // createUpdateGraphs(priceGraphSvg, priceData, hydroData, "price", true, true, true)
+    // createUpdateGraphs(hydroGraphSvg, minMaxData.min, priceData, "min", false, true, false)
+    // createUpdateGraphs(hydroGraphSvg, minMaxData.max, priceData, "max", false, true, false)
 
     let map = new RegionMap(d3.select("#norway"))
+    let data = await getHydroData("2021")
+    let noData = data.map(d => {
+        return {
+            date: d.date,
+            value: d.NO
+        }
+    })
+    let hydro = new Graph(d3.select("#hydroGraphs"), noData, "green")
+    let no1Data = data.map(d=> {
+        return {
+            date: d.date,
+            value: d.NO1
+        }
+    })
+    hydro.updateData(no1Data)
     // zones.forEach(d =>
     //     initializeMap(d, mapColorScale, mapSvg, hydroData, priceData))
     // let mapRegions = mapSvg.selectAll("g").filter(".map")
@@ -365,37 +374,4 @@ async function main() {
     // priceGraphSvg.call(installLinkHandler, priceData, hydroData, mapRegions, altMapColorScale);
 
 }
-const mapColorScale = d3.scaleLinear().domain([0, 1])
-    .range(["white", "blue"])
-const altMapColorScale = d3.scaleLinear().domain([0, 1])
-    .range(["white", "green"])
-const margin = 40
-const zones = [
-    "NO1",
-    "NO2",
-    "NO3",
-    "NO4",
-    "NO5",
-]
-const circleColors = d3.scaleOrdinal().domain(["hydro", "price", "min", "max"]).range(["blue","green","red", "yellow"])
-// const colors = [
-//     "grey",
-//     "white",
-//     "red",
-//     "blue",
-//     "green"
-// ]
-// const circleColors = d3.scaleOrdinal().domain(zones).range(colors)
-
-const years = [
-    2021,
-    2020,
-    2019,
-    2018,
-    2017,
-    2016,
-    2015,
-    2014,
-    2013
-]
 main()
