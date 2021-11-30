@@ -1,71 +1,60 @@
-
 class GraphSet {
-    constructor(svg, dataSet) {
-        let pxX = +svg.attr("width") - margin;
-        let pxY = +svg.attr("height") - margin;
+    constructor(svg, color) {
+        this.svg = svg
+        this.pxX = +svg.attr("width") - margin;
+        this.pxY = +svg.attr("height") - margin;
 
-        this.dataSet = dataSet
-        // this.year = "2021"
-
-        // let scX = makeTimeScale(data, d => d.date, [margin, pxX]);
-        // let scY = d3.scaleLinear().domain([0, 1]).range([pxY, margin]).nice()
-        // svg.selectAll("g").data(zones).enter()
-        //     .call(new Graph, zones.forEach(zone=> this.dataMapper(zone)), pxX, Math.floor(pxY/zones.length))
-        this.subGraphs = {}
+        this.subGraphs = new Map()
         zones.forEach((zone, i) => {
-            let height = Math.floor(pxY/zones.length)
-            let g = svg.append("g").attr("width", pxX).attr("height", height).classed(zone, true)
+            let height = Math.floor(this.pxY / zones.length)
+            let g = svg.append("g").attr("width", this.pxX).attr("height", height).classed(zone, true)
                 .attr("transform", `translate(0,${height * i})`)
-            this.subGraphs[zone] = new Graph(g, this.dataMapper(zone), "green")
+            this.subGraphs.set(zone, new Graph(g, color))
         })
     }
-    dataMapper(zone) {
-        return this.dataSet.map(data => {
+    dataMapper(zone, dataSet) {
+        return dataSet.map(data => {
             return {
-                date: data.date,
+                week: +data.week,
                 value: data[zone]
             }
         })
     }
-    // get url() {
-    //     if (this.dataSet == "hydro")
-    //         return `../data/${year}/hydro_reservoir.csv`
-    //     else if (this.dataSet == "price")
-    //         return `../data/${year}/elspot-prices_${year}_weekly_nok.csv`
-    // }
-    // changeYear(year) {
-    //     this.year = year
-    //     // redraw circles
-    // }
-    // get parser() {
-    //     if (this.dataSet == "hydro")
-    //         return getHydroData
-    //     if (this.dataSet == "price")
-    //         return getPriceData
-    // }
+    updateData(dataSet) {
+        this.dataSet = dataSet
+        this.subGraphs.forEach((graph, region) => graph.updateData(this.dataMapper(region, this.dataSet)))
+    }
+    drawMinMax(minMaxData) {
+        this.minMaxData = minMaxData
+        this.subGraphs.forEach((graph, region) => {
+            let minData = this.dataMapper(region, minMaxData.min)
+            let maxData = this.dataMapper(region, minMaxData.max)
+            graph.drawMin(minData)
+            graph.drawMax(maxData)
+        })
+    }
 }
 
 class Graph {
-    constructor(svg, data, color) {
+    constructor(svg, color) {
         this.svg = svg
         this.color = color
         this.pxX = +svg.attr("width")
         this.pxY = +svg.attr("height") - margin
-        this.updateData(data)
+        this.scX = d3.scaleLinear().domain([1, 53]).range([margin, this.pxX])
+        this.scY = d3.scaleLinear().domain([0, 1]).range([this.pxY, margin]).nice()
 
     }
     updateData(data) {
         this.data = data
-        this.scX = Graph.makeTimeScale(data, d => d.date, [margin, this.pxX]);
-        this.scY = d3.scaleLinear().domain([0, 1]).range([this.pxY, margin]).nice()
         this.svg.call(Graph.drawAxis, this)
         this.svg.call(Graph.drawCircles, this)
-        this.svg.call(Graph.drawLines, this)
+        this.svg.call(Graph.drawLines, this, this.data, "primary", this.color)
     }
     // The .call() way of calling does not pass allow this to exist, so functions may as well be static, as we pass in this explicitly as graph
-    static drawAxis(svg, graph) {
-        let xAxis = svg.selectAll("g.x").data([0])
-        let yAxis = svg.selectAll("g.y").data([0])
+    static drawAxis(selection, graph) {
+        let xAxis = selection.selectAll("g.x").data([0])
+        let yAxis = selection.selectAll("g.y").data([0])
 
         // Delete
         xAxis.exit().remove()
@@ -74,7 +63,7 @@ class Graph {
         // Append
         xAxis.enter().append("g")
             .attr("class", "x")
-            .call(d3.axisBottom(graph.scX).ticks(graph.data.length).tickFormat(d3.timeFormat("%V")))
+            .call(d3.axisBottom(graph.scX).ticks(graph.data.length))
             .attr("transform", "translate(0," + graph.pxY + ")")
             .selectAll("text")
             .attr("transform", "translate(0,10),rotate(-30)")
@@ -83,14 +72,14 @@ class Graph {
             .call(d3.axisLeft(graph.scY))
             .attr("transform", "translate(" + margin + ",0)")
 
-        xAxis.call(d3.axisBottom(graph.scX).ticks(graph.data.length).tickFormat(d3.timeFormat("%V")))
+        xAxis.call(d3.axisBottom(graph.scX).ticks(graph.data.length))
             .selectAll("text")
             .attr("transform", "translate(0,10),rotate(-30)")
         yAxis.call(d3.axisLeft(graph.scY))
 
         // Update
         xAxis
-            .call(d3.axisBottom(graph.scX).ticks(graph.data.length).tickFormat(d3.timeFormat("%V")))
+            .call(d3.axisBottom(graph.scX).ticks(graph.data.length))
             .attr("transform", "translate(0," + graph.pxY + ")")
             .selectAll("text")
             .attr("transform", "translate(0,10),rotate(-30)")
@@ -98,15 +87,15 @@ class Graph {
             .call(d3.axisLeft(graph.scY))
             .attr("transform", "translate(" + margin + ",0)")
 
-        xAxis.call(d3.axisBottom(graph.scX).ticks(graph.data.length).tickFormat(d3.timeFormat("%V")))
+        xAxis.call(d3.axisBottom(graph.scX).ticks(graph.data.length))
             .selectAll("text")
             .attr("transform", "translate(0,10),rotate(-30)")
         yAxis.call(d3.axisLeft(graph.scY))
         graph.xAxis = xAxis
         graph.yAxis = yAxis
     }
-    static drawCircles(svg, graph) {
-        let circles = svg.selectAll("circle").data(graph.data)
+    static drawCircles(selection, graph) {
+        let circles = selection.selectAll("circle").data(graph.data)
 
         // Delete
         circles.exit().remove()
@@ -114,20 +103,20 @@ class Graph {
         // Append
         circles.enter().append("circle")
             .attr("r", 3)
-            .attr("cx", d => graph.scX(d.date))
+            .attr("cx", d => graph.scX(d.week))
             .attr("cy", d => graph.scY(d.value))
 
         // Update
         circles
-            .attr("cx", d => graph.scX(d.date))
+            .attr("cx", d => graph.scX(d.week))
             .attr("cy", d => graph.scY(d.value))
         graph.circles = circles
     }
-    static drawLines(svg, graph) {
+    static drawLines(selection, graph, data, lineName, color) {
         // Define lines
         let lnMkr = d3.line().curve(d3.curveNatural)
-            .x(d => graph.scX(d.date)).y(d => graph.scY(d.value));
-        let lines = svg.selectAll("path.lines").data(graph.data)
+            .x(d => graph.scX(d.week)).y(d => graph.scY(d.value));
+        let lines = selection.selectAll(`path.${lineName}`).data(data)
 
         // Remove excess lines
         lines.exit().remove()
@@ -135,14 +124,14 @@ class Graph {
 
         // Add new lines
         lines.enter().append("path")
-            .attr("stroke", graph.color)
+            .attr("stroke", color)
             .attr("fill", "none")
-            .classed("lines", true)
-            .attr("d", lnMkr(graph.data))
+            .classed(lineName, true)
+            .attr("d", lnMkr(data))
 
         // Update existing lines
-        lines.attr("d", lnMkr(graph.data))
-        graph.lines = lines
+        lines.attr("d", lnMkr(data))
+        graph[lineName] = lines
     }
     showLines(show) {
         show ? this.lines.attr("stroke", color) : this.lines.attr("stroke", "none")
@@ -152,10 +141,101 @@ class Graph {
     }
 
     static makeTimeScale(data, accessor, range) {
-        return d3.scaleTime()
+        return d3.scaleLinear()
             .domain(d3.extent(data, accessor))
             .range(range).nice()
     }
+    drawMin(minData) {
+        this.svg.call(Graph.drawLines, this, minData, "min", "red")
+    }
+
+    drawMax(maxData) {
+        this.svg.call(Graph.drawLines, this, maxData, "max", "yellow")
+    }
+}
+function updateLinkHandler(svg, colorData, textData, mapRegions, sc) {
+    let pxX = svg.attr("width") - 2 * margin
+    let pxY = svg.attr("height") - 2 * margin
+
+    let mouseHeld = false
+
+    function updateMap(event) {
+        let pt = d3.pointer(event);
+        let minimum = 5000
+        let circle = d3.selectAll("circle").each((d, i, n) => {
+            let sel = d3.select(n[i])
+            let xDistance = Math.abs(sel.attr("cx") - pt[0])
+            minimum = Math.min(minimum, xDistance)
+        }).filter((d, i, n) =>
+            Math.abs(d3.select(n[i]).attr("cx") - pt[0]) == minimum)
+        let currentTime = circle.data()[0].date
+        mapRegions.each(function (_, i, n) {
+            let sel = d3.select(n[i])
+            let field = sel.attr("class").slice(0, 3)
+            sel.selectAll("path").attr("fill", () => {
+                let currentColor = d3.select(n[i]).attr("fill")
+                try {
+                    return sc(colorData.filter(d => d.date.getTime() == currentTime.getTime())[0][field])
+
+                } catch (e) {
+                    return currentColor
+                }
+
+            }
+            )
+            // Price data may not overlap with hydrodata
+            try {
+                sel.select(".price").text((+textData.filter(d => d.date.getTime() == currentTime.getTime())[0][field]).toFixed(4))
+
+            } catch (e) { }
+
+
+        })
+
+    }
+
+    let hotzone = svg.select("rect").data([0])
+    hotzone.exit().remove
+    if (hotzone.enter().size() > 0)
+        hotzone.enter().append("rect")
+            .attr("cursor", "crosshair")
+            .attr("x", margin).attr("y", margin)
+            .attr("width", pxX).attr("height", pxY)
+            .attr("visibility", "hidden")
+            .attr("pointer-events", "all")
+            .on("mousemove", function (event) {
+                if (mouseHeld) {
+                    updateMap(event)
+                }
+            })
+            .on("mousedown", function (event) {
+                mouseHeld = true
+                updateMap(event)
+            })
+            .on("mouseup", function () {
+                mouseHeld = false
+            })
+            .on("mouseleave", function () {
+                mouseHeld = false
+            })
+    if (hotzone.size() > 0)
+        hotzone
+            .on("mousemove", function (event) {
+                if (mouseHeld) {
+                    updateMap(event)
+                }
+            })
+            .on("mousedown", function (event) {
+                mouseHeld = true
+                updateMap(event)
+            })
+            .on("mouseup", function () {
+                mouseHeld = false
+            })
+            .on("mouseleave", function () {
+                mouseHeld = false
+            })
+
 }
 async function createUpdateGraphs(graphSvg, dataSet, linkedData, classTag, circles, lines, handler) {
 
@@ -188,7 +268,7 @@ function drawUpdateData(svg, data, curve, classTag, circles, lines) {
     let pxX = +svg.attr("width") - margin;
     let pxY = +svg.attr("height") - margin;
 
-    let scX = makeTimeScale(data, d => d.date, [margin, pxX]);
+    let scX = makeTimeScale(data, d => d.week, [margin, pxX]);
     let scY = d3.scaleLinear().domain([0, 1]).range([pxY, margin]).nice()
     // let circles = svg.selectAll(`g`).selectAll("circle").data(hydroData)
     svg.each(function (d) {

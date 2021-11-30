@@ -8,7 +8,7 @@ class RegionMap {
         let url = "../config/norge.geojson"
 
         d3.json(url).then(regionGeoJson => {
-            drawRegions(regionGeoJson, this.path)
+            this.regions = drawRegions(regionGeoJson, this.path)
         });
         function drawRegions(regionGeoJson, path) {
 
@@ -20,7 +20,7 @@ class RegionMap {
                 .attr("fill", "red")
                 .style("stroke", "visible")
             g.call(labelRegions, path)
-            // return svg
+            return g
         }
 
         function labelRegions(g, path) {
@@ -62,6 +62,15 @@ class RegionMap {
     }
     mapRegions() {
         return this.svg.selectAll(`g`)
+    }
+    updateRegionColor(region, color) {
+        let g = this.regions.filter(`g.${region}`)
+        g.selectAll("path").attr("fill", color)
+    }
+    updateRegionLabel(region, text) {
+        let g = this.regions.filter(`g.${region}`)
+        g.selectAll("text.price").text(text)
+
     }
 
 

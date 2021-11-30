@@ -1,8 +1,8 @@
 function hydroParse(d) {
 
     return {
-        date:
-            getDateOfISOWeek(d.Week, d.Year),
+        week: d.Week,
+        // getDateOfISOWeek(d.Week, d.Year),
         NO: d.NORGE.replace(",", "."),
         NO1: d.NO1.replace(",", "."),
         NO2: d.NO2.replace(",", "."),
@@ -18,12 +18,10 @@ function capacityParse(d) {
     }
 }
 function elspotPriceParse(d) {
-    let year = "20" + d.date.slice(-2)
-    let weekNumber = +d.date.slice(0, 2) + 1
+    let weekNumber = +d.date.slice(0, 2)
 
     return {
-        date:
-            getDateOfISOWeek(weekNumber, year),
+        week: weekNumber,
         NO1: +d["Oslo"].replace(",", ".") / 1000.0,
         NO2: +d["Kr.sand"].replace(",", ".") / 1000.0,
         NO3: +d["Tr.heim"].replace(",", ".") / 1000.0,
@@ -32,9 +30,9 @@ function elspotPriceParse(d) {
     }
 }
 
-function minMaxParser(d, year) {
-    if (!year)
-        year = "2021"
+function minMaxParser(d) {
+    // if (!year)
+    //     year = "2021"
     let result = {
         min: [],
         max: [],
@@ -42,21 +40,21 @@ function minMaxParser(d, year) {
     }
     // for (let i = 0; i < 54; i++ ){
     d.forEach((d) => {
-        let date = getDateOfISOWeek(d.iso_uke, year)
+        // let date = getDateOfISOWeek(d.iso_uke, year)
         let region = `${d.omrType}${d.omrnr}`
         if (!result.min[d.iso_uke - 1])
             result.min[d.iso_uke - 1] = {
-                date: date
+                week: d.iso_uke
             }
         result.min[d.iso_uke - 1][region] = d.minFyllingsgrad
         if (!result.max[d.iso_uke - 1])
             result.max[d.iso_uke - 1] = {
-                date: date
+                week: d.iso_uke
             }
         result.max[d.iso_uke - 1][region] = d.maxFyllingsgrad
         if (!result.median[d.iso_uke - 1])
             result.median[d.iso_uke - 1] = {
-                date: date
+                week: d.iso_uke
             }
         result.median[d.iso_uke - 1][region] = d.medianFyllingsgrad
         // let j = d.omrnr > 0 ? d.omrnr : ""
@@ -82,6 +80,6 @@ async function getPriceData(year) {
     return d3.csv(`../data/${year}/elspot-prices_${year}_weekly_nok.csv`, elspotPriceParse)
 }
 
-async function getMinMaxData(year) {
-    return d3.json("../data/min_max_median.json").then(d => minMaxParser(d, year))
+async function getMinMaxData() {
+    return d3.json("../data/min_max_median.json").then(minMaxParser)
 }

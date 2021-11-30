@@ -9,13 +9,15 @@
     <script type="text/javascript" src="./src/utils/utils.js?random=<?php echo uniqid(); ?>"></script>
     <script type="text/javascript" src="./src/parsers.js?random=<?php echo uniqid(); ?>"></script>
     <script type="text/javascript" src="./src/graph.js?random=<?php echo uniqid(); ?>"></script>
+    <script type="text/javascript" src="./src/interactor.js?random=<=php echo uniqid(); ?>"></script>
+    <script type="text/javascript" src="./src/loader.js?random=<=php echo uniqid(); ?>"></script>
     <script type="text/javascript" src="./src/hydro.js?random=<?php echo uniqid(); ?>"></script>
 
     <script>
     </script>
 </head>
 
-<body>
+<body onload="main()">
     <svg id="norway" width="900" height="900" style="background: black" />
     <svg id="hydroGraphs" width="900" height="900" style="background: lightgrey" />
     <p></p>

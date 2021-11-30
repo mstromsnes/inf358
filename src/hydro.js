@@ -70,7 +70,6 @@ function initializeMap(region, colorScale, svg, hydroData, priceData) {
     let priceDatum = priceData[priceData.length - 1]
     svg.selectAll("path").filter("." + region).attr("fill", colorScale(hydroDatum[region]))
     svg.selectAll(".price").filter((d, i, n) => d3.select(n[i]).classed(region)).text(priceDatum[region].toFixed(4))
-    console.log(svg.selectAll(".price"))
 
 }
 
@@ -331,52 +330,15 @@ async function fillDropDown() {
         createUpdateGraphs(d3.select("#hydroGraphs"), minMaxData.min, priceData, "min", false, true, true)
         createUpdateGraphs(d3.select("#hydroGraphs"), minMaxData.max, priceData, "max", false, true, true)
     })
-    console.log(dropDown)
 }
 
 async function main() {
-    let minMaxData = await getMinMaxData("2021")
-    fillDropDown()
-
-    // let mapSvg = await drawMap()
-
-    // let hydroData = await getHydroData("2021")
-    // let priceData = await getPriceData("2021")
-    // let hydroGraphSvg = d3.select("#hydroGraphs")
-    // let priceGraphSvg = d3.select("#priceGraphs")
-
-    // createUpdateGraphs(hydroGraphSvg, hydroData, priceData, "hydro", true, true, true)
-    // createUpdateGraphs(priceGraphSvg, priceData, hydroData, "price", true, true, true)
-    // createUpdateGraphs(hydroGraphSvg, minMaxData.min, priceData, "min", false, true, false)
-    // createUpdateGraphs(hydroGraphSvg, minMaxData.max, priceData, "max", false, true, false)
 
     let map = new RegionMap(d3.select("#norway"))
-    let hydroData = await getHydroData("2021")
-    let hydro = new GraphSet(d3.select("#hydroGraphs"), hydroData)
-    let priceData = await getPriceData("2021")
-    let price = new GraphSet(d3.select("#priceGraphs"), priceData)
-    // let noData = data.map(d => {
-    //     return {
-    //         date: d.date,
-    //         value: d.NO
-    //     }
-    // })
-    // let hydro = new Graph(d3.select("#hydroGraphs"), noData, "green")
-    // let no1Data = data.map(d=> {
-    //     return {
-    //         date: d.date,
-    //         value: d.NO1
-    //     }
-    // })
-    // hydro.updateData(no1Data)
-    // zones.forEach(d =>
-    //     initializeMap(d, mapColorScale, mapSvg, hydroData, priceData))
-    // let mapRegions = mapSvg.selectAll("g").filter(".map")
-
-    // hydroGraphSvg.call(installLinkHandler, hydroData, priceData, mapRegions, mapColorScale);
-    // priceGraphSvg.call(installLinkHandler, priceData, hydroData, mapRegions, altMapColorScale);
-    console.log(hydroData)
-    console.log(priceData)
+    let hydro = new GraphSet(d3.select("#hydroGraphs"), "blue")
+    let price = new GraphSet(d3.select("#priceGraphs"), "green")
+    let interactor = new Interactor(map, hydro, price)
+    let loader = new Loader(d3.select("#selectYear"), 2021, hydro, price)
 
 }
-main()
+// main()
