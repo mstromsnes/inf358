@@ -16,17 +16,24 @@ class Loader {
         this.hydroGraph = hydroGraph
         this.priceGraph = priceGraph
         this.fillDropDown()
-        getHydroData(year).then(hydroGraph.updateData.bind(hydroGraph))
-        getPriceData(year).then(priceGraph.updateData.bind(priceGraph))
-        getMinMaxData().then(hydroGraph.drawMinMax.bind(hydroGraph))
+        Promise.all([
+            getHydroData(year).then(hydroGraph.updateData.bind(hydroGraph)),
+            getPriceData(year).then(priceGraph.updateData.bind(priceGraph)),
+            getMinMaxData().then(hydroGraph.drawMinMax.bind(hydroGraph))
+        ]).then(this.initalizeMap)
     }
     fillDropDown() {
         let loader = this
         this.dropDown.selectAll("option").data(Loader.years).enter().append("option").text(d => d).attr("value", d => d)
         this.dropDown.on("change", function () {
             loader.year = d3.select(this).property("value")
-            getHydroData(loader.year).then(loader.hydroGraph.updateData.bind(loader.hydroGraph))
-            getPriceData(loader.year).then(loader.priceGraph.updateData.bind(loader.priceGraph))
+            Promise.all([
+                getHydroData(loader.year).then(loader.hydroGraph.updateData.bind(loader.hydroGraph)),
+                getPriceData(loader.year).then(loader.priceGraph.updateData.bind(loader.priceGraph))
+            ]).then(loader.initalizeMap)
         })
+    }
+    initalizeMap(){
+        d3.select("rect").dispatch("initialize")
     }
 }

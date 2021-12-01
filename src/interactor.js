@@ -15,18 +15,22 @@ class Interactor {
             .attr("pointer-events", "all")
             .on("mousemove", function (event) {
                 if (this.mouseHeld) {
-                    this.updateMap(event, graph)
+                    this.updateMap(d3.pointer(event), graph)
                 }
             }.bind(this))
             .on("mousedown", function (event) {
                 this.mouseHeld = true
-                this.updateMap(event, graph)
+                this.updateMap(d3.pointer(event), graph)
             }.bind(this))
             .on("mouseup", function () {
                 this.mouseHeld = false
             }.bind(this))
             .on("mouseleave", function () {
                 this.mouseHeld = false
+            }.bind(this))
+            .on("initialize", function () {
+                let pt = [+hotzone.attr("width"),+hotzone.attr("height")/2]
+                this.updateMap(pt, graph)
             }.bind(this))
     }
     installLinkHandler() {
@@ -38,8 +42,7 @@ class Interactor {
         this.hotzonePrice.call(this.linkHandler.bind(this), this.priceGraph)
 
     }
-    updateMap(event, graph) {
-        let pt = d3.pointer(event);
+    updateMap(pt, graph) {
         let minimum = 5000
         let circle = graph.svg.selectAll("circle").each((d, i, n) => {
             let sel = d3.select(n[i])
