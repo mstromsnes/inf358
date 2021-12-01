@@ -2,7 +2,6 @@ function hydroParse(d) {
 
     return {
         week: d.Week,
-        // getDateOfISOWeek(d.Week, d.Year),
         NO: d.NORGE.replace(",", "."),
         NO1: d.NO1.replace(",", "."),
         NO2: d.NO2.replace(",", "."),
@@ -31,16 +30,12 @@ function elspotPriceParse(d) {
 }
 
 function minMaxParser(d) {
-    // if (!year)
-    //     year = "2021"
     let result = {
         min: [],
         max: [],
         median: []
     }
-    // for (let i = 0; i < 54; i++ ){
     d.forEach((d) => {
-        // let date = getDateOfISOWeek(d.iso_uke, year)
         let region = `${d.omrType}${d.omrnr}`
         if (!result.min[d.iso_uke - 1])
             result.min[d.iso_uke - 1] = {
@@ -57,21 +52,9 @@ function minMaxParser(d) {
                 week: d.iso_uke
             }
         result.median[d.iso_uke - 1][region] = d.medianFyllingsgrad
-        // let j = d.omrnr > 0 ? d.omrnr : ""
-        // result[d.iso_uke][`${d.omrType}${j}`] = {
-        //     min: d.minFyllingsgrad,
-        //     max: d.maxFyllingsgrad,
-        //     median: d.medianFyllingsGrad
-        // }
     })
     return result
 }
-// function updateMinMaxYear(data, year)
-// {
-//     data.forEach((d,i)=>
-//         d.date = getDateOfISOWeek(i+1,year))
-//     return data
-// }
 async function getHydroData(year) {
     return d3.csv(`../data/${year}/hydro_reservoir.csv`, hydroParse)
 }
