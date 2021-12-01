@@ -55,7 +55,60 @@ function minMaxParser(d) {
     })
     return result
 }
-async function getHydroData(year) {
+
+function flowParse(d) {
+    let day = +(d.Date.slice(0,2))
+    let month = +(d.Date.slice(3,5))-1
+    let year = +(d.Date.slice(6,10))
+    let date = new Date()
+    date.setFullYear(year, month, day)
+    let hour = +(d.Hours.slice(5,7)) - 1
+    date.setHours(hour, 0, 0, 0)
+    let week = date.getWeek()
+
+    // Don't use the final week of the last year
+    if (week === 53 && month === 0)
+        return this
+
+    // Sum imports and exports
+    let NO1 = [
+        d["NO2 > NO1"].replace(",",".") - d["NO1 > NO2"].replace(",","."),
+        d["NO3 > NO1"].replace(",",".") - d["NO1 > NO3"].replace(",","."),
+        d["NO5 > NO1"].replace(",",".") - d["NO1 > NO5"].replace(",","."),
+        d["SE3 > NO1"].replace(",",".") - d["NO1 > SE3"].replace(",","."),
+    ]
+    let NO2 = [
+        d["NO1 > NO2"].replace(",",".") - d["NO2 > NO1"].replace(",","."),
+        d["NO5 > NO2"].replace(",",".") - d["NO2 > NO5"].replace(",","."),
+        d["NL > NO2"].replace(",",".") - d["NO2 > NL"].replace(",","."),
+        d["DK1 > NO2"].replace(",",".") - d["NO2 > DK1"].replace(",","."),
+        d["DE > NO2"].replace(",",".") - d["NO2 > DE"].replace(",","."),
+    ]
+    let NO3 = [
+        d["NO1 > NO3"].replace(",",".") - d["NO3 > NO1"].replace(",","."),
+        d["NO4 > NO3"].replace(",",".") - d["NO3 > NO4"].replace(",","."),
+        d["NO5 > NO3"].replace(",",".") - d["NO3 > NO5"].replace(",","."),
+        d["SE2 > NO3"].replace(",",".") - d["NO3 > SE2"].replace(",","."),
+    ]
+    let NO4 = [
+        d["NO3 > NO4"].replace(",",".") - d["NO4 > NO3"].replace(",","."),
+        d["SE1 > NO4"].replace(",",".") - d["NO4 > SE1"].replace(",","."),
+        d["SE2 > NO4"].replace(",",".") - d["NO4 > SE2"].replace(",","."),
+    ]
+    let NO5 = [
+        d["NO1 > NO5"].replace(",",".") - d["NO5 > NO1"].replace(",","."),
+        d["NO2 > NO5"].replace(",",".") - d["NO5 > NO2"].replace(",","."),
+        d["NO3 > NO5"].replace(",",".") - d["NO5 > NO3"].replace(",","."),
+    ]
+    let flow = new Flow(date, NO1, NO2, NO3, NO4, NO5)
+    if (this[week-1] === undefined) {
+        this[week-1] = flow
+    } else {
+        this[week-1].add(flow)
+    }
+    return this
+}
+    async function getHydroData(year) {
     return d3.csv(`../data/${year}/hydro_reservoir.csv`, hydroParse)
 }
 
@@ -65,4 +118,44 @@ async function getPriceData(year) {
 
 async function getMinMaxData() {
     return d3.json("../data/min_max_median.json").then(minMaxParser)
+}
+
+async function getFlowData(year) {
+    let reduction = []
+    await d3.csv(`../data/${year}/elspot-flow-no_${year}_hourly.csv`, flowParse.bind(reduction))
+    return reduction
+}
+
+class Flow {
+    // static regionAdjacency = {
+    //     NO1: ["NO2", "NO3", "NO5", "SE3"],
+    //     NO2: [NO1, NO5, NL, DK1, DE],
+    //     NO3: [NO1, NO4, NO5, SE2],
+    //     NO4: [NO3, SE1, SE2],
+    //     NO5: [NO1, NO2, NO3],
+    // }
+    static regions = [
+        "NO1",
+        "NO2",
+        "NO3",
+        "NO4",
+        "NO5"
+    ]
+    constructor(date, NO1, NO2, NO3, NO4, NO5){
+        this.date = date
+        this.NO1 = NO1
+        this.NO2 = NO2
+        this.NO3 = NO3
+        this.NO4 = NO4
+        this.NO5 = NO5
+        this.week = date.getWeek()
+
+    }
+    add(rhs) {
+        Flow.regions.forEach(region => {
+            this[region].forEach(function (value, index) {
+                this[region][index] += rhs[region][index]
+            }.bind(this))
+        })
+    }
 }

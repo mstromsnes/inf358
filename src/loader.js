@@ -19,7 +19,10 @@ class Loader {
         Promise.all([
             getHydroData(year).then(hydroGraph.updateData.bind(hydroGraph)),
             getPriceData(year).then(priceGraph.updateData.bind(priceGraph)),
-            getMinMaxData().then(hydroGraph.drawMinMax.bind(hydroGraph))
+            getMinMaxData().then(hydroGraph.drawMinMax.bind(hydroGraph)),
+            getFlowData("2021").then(function (flowData) {
+                console.log(flowData)
+            })
         ]).then(this.initalizeMap)
     }
     fillDropDown() {
@@ -29,7 +32,7 @@ class Loader {
             loader.year = d3.select(this).property("value")
             Promise.all([
                 getHydroData(loader.year).then(loader.hydroGraph.updateData.bind(loader.hydroGraph)),
-                getPriceData(loader.year).then(loader.priceGraph.updateData.bind(loader.priceGraph))
+                getPriceData(loader.year).then(loader.priceGraph.updateData.bind(loader.priceGraph)),
             ]).then(loader.initalizeMap)
         })
     }
