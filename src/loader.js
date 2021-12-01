@@ -10,9 +10,10 @@ class Loader {
         2014,
         2013
     ]
-    constructor(dropDown, year, hydroGraph, priceGraph) {
+    constructor(dropDown, year, regionMap, hydroGraph, priceGraph) {
         this.dropDown = dropDown
         this.year = year
+        this.regionMap = regionMap
         this.hydroGraph = hydroGraph
         this.priceGraph = priceGraph
         this.fillDropDown()
@@ -20,9 +21,7 @@ class Loader {
             getHydroData(year).then(hydroGraph.updateData.bind(hydroGraph)),
             getPriceData(year).then(priceGraph.updateData.bind(priceGraph)),
             getMinMaxData().then(hydroGraph.drawMinMax.bind(hydroGraph)),
-            getFlowData("2021").then(function (flowData) {
-                console.log(flowData)
-            })
+            getFlowData("2021").then(regionMap.updateFlowData.bind(regionMap))
         ]).then(this.initalizeMap)
     }
     fillDropDown() {
@@ -37,6 +36,6 @@ class Loader {
         })
     }
     initalizeMap(){
-        d3.select("rect").dispatch("initialize")
+        d3.selectAll("rect").dispatch("initialize")
     }
 }

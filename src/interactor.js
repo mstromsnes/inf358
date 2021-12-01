@@ -67,5 +67,6 @@ class Interactor {
             }
             this.regionMap.updateRegionLabel(zone, priceLabel)
         })
+        this.regionMap.updateFlowLabels(selectedWeek)
     }
 }

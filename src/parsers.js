@@ -100,7 +100,26 @@ function flowParse(d) {
         d["NO2 > NO5"].replace(",",".") - d["NO5 > NO2"].replace(",","."),
         d["NO3 > NO5"].replace(",",".") - d["NO5 > NO3"].replace(",","."),
     ]
-    let flow = new Flow(date, NO1, NO2, NO3, NO4, NO5)
+    let NL = [
+        d["NO2 > NL"].replace(",",".") - d["NL > NO2"].replace(",","."),
+    ]
+    let DK1 = [
+        d["NO2 > DK1"].replace(",",".") - d["DK1 > NO2"].replace(",","."),
+    ]
+    let DE = [
+        d["NO2 > DE"].replace(",",".") - d["DE > NO2"].replace(",","."),
+    ]
+    let SE1 = [
+        d["NO4 > SE1"].replace(",",".") - d["SE1 > NO4"].replace(",","."),
+    ]
+    let SE2 = [
+        d["NO3 > SE2"].replace(",",".") - d["SE2 > NO3"].replace(",","."),
+        d["NO4 > SE2"].replace(",",".") - d["SE2 > NO4"].replace(",","."),
+    ]
+    let SE3 = [
+        d["NO1 > SE3"].replace(",",".") - d["SE3 > NO1"].replace(",","."),
+    ]
+    let flow = new Flow(date, NO1, NO2, NO3, NO4, NO5, NL, DK1, DE, SE1, SE2, SE3)
     if (this[week-1] === undefined) {
         this[week-1] = flow
     } else {
@@ -127,35 +146,33 @@ async function getFlowData(year) {
 }
 
 class Flow {
-    // static regionAdjacency = {
-    //     NO1: ["NO2", "NO3", "NO5", "SE3"],
-    //     NO2: [NO1, NO5, NL, DK1, DE],
-    //     NO3: [NO1, NO4, NO5, SE2],
-    //     NO4: [NO3, SE1, SE2],
-    //     NO5: [NO1, NO2, NO3],
-    // }
-    static regions = [
-        "NO1",
-        "NO2",
-        "NO3",
-        "NO4",
-        "NO5"
-    ]
-    constructor(date, NO1, NO2, NO3, NO4, NO5){
+    constructor(date, NO1, NO2, NO3, NO4, NO5, NL, DK1, DE, SE1, SE2, SE3){
         this.date = date
         this.NO1 = NO1
         this.NO2 = NO2
         this.NO3 = NO3
         this.NO4 = NO4
         this.NO5 = NO5
+        this.NL = NL
+        this.DK1 = DK1
+        this.DE = DE
+        this.SE1 = SE1
+        this.SE2 = SE2
+        this.SE3 = SE3
         this.week = date.getWeek()
 
     }
     add(rhs) {
-        Flow.regions.forEach(region => {
+        expandedZones.forEach(region => {
             this[region].forEach(function (value, index) {
                 this[region][index] += rhs[region][index]
             }.bind(this))
         })
+    }
+    forEach(callBack) {
+        expandedZones.forEach((region, index, object) => {
+            callBack(this[region], index, this)
+        })
+
     }
 }

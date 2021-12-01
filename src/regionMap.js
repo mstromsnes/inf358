@@ -1,5 +1,8 @@
 class RegionMap {
     constructor(svg) {
+        this.defs = svg.append("defs")
+        RegionMap.defineArrow(this.defs)
+        RegionMap.defineGradient(this.defs)
         this.svg = svg
         this.pxX = +this.svg.attr("width")
         this.pxY = +this.svg.attr("height")
@@ -7,14 +10,18 @@ class RegionMap {
 
         let url = "../config/norge.geojson"
 
-        d3.json(url).then(regionGeoJson => {
+        this.appendColorMap()
+
+        d3.json(url).then(function (regionGeoJson) {
             this.regions = drawRegions(regionGeoJson, this.path)
-        });
+            this.flowElements = appendArrows(svg)
+            console.log(this.flowElements)
+        }.bind(this));
         function drawRegions(regionGeoJson, path) {
 
             // Draw the map
             let g = svg.selectAll("path").data(regionGeoJson.features).enter()
-                .append("g").attr("class", d=>d.properties.name)
+                .append("g").attr("class", d => d.properties.name)
             g.append("path")
                 .attr("d", path)
                 .attr("fill", "red")
@@ -36,20 +43,72 @@ class RegionMap {
                 .text(d => d.properties.name)
                 .attr("x", d => textPosition(d)[0])
                 .attr("y", d => textPosition(d)[1])
-                // .classed(d=>d.properties.name, true)
                 .classed("name", true)
                 .attr("font-family", "sans-serif").attr("font-size", 14)
                 .attr("text-anchor", "middle")
+                .attr("fill", "white")
             g.append("text")
                 .text("2")
                 .attr("x", d => textPosition(d)[0])
                 .attr("y", d => textPosition(d)[1] + 14 + 6)
-                // .classed(d=>d.properties.name, true)
                 .classed("price", true)
                 .attr("font-family", "sans-serif").attr("font-size", 14)
-                .attr("text-anchor", "middle");
+                .attr("text-anchor", "middle")
+                .attr("fill", "white")
             return g
         }
+        function appendArrows(svg) {
+            let flowElements = []
+            let g = svg.append("g").classed("flow", true)
+            regionBorder.forEach(function (region, i) {
+                let neighbourElements = []
+                region.forEach((location, j) => {
+                    let neighbour = regionAdjacency[expandedZones[i]][j]
+                    let [x, y, a] = location
+                    let width = 40
+                    let height = 20
+                    let arrow = g.append("use")
+                        .attr("href", "#westArrow")
+                        .attr("x", x).attr("y", y)
+                        .attr("transform", `translate(${width / 2},${height / 2}) translate(${x},${y}) rotate(${a}) translate(${-x},${-y}) translate(${-width / 2},${-height / 2})`)
+                        .classed(`${region}${neighbour}`, true)
+                    let label = appendLabel(g, region, neighbour, i, j)
+                    neighbourElements[j] = [arrow, label]
+                })
+                flowElements[i] = neighbourElements
+            })
+            function appendLabel(g, region, neighbour, i, j) {
+                let [x, y] = regionLabels[i][j]
+                return g.append("text")
+                    .attr("x", x).attr("y", y)
+                    .classed(`${region}${neighbour}`, true)
+                    .attr("fill", "white").text("593")
+
+            }
+            return flowElements
+        }
+    }
+    static defineArrow(defs) {
+        defs.append("svg").attr("width", "40").attr("height", "20").attr("id", "westArrow").attr("viewBox", "0 0 902.25049 364.71875")
+            .append("polygon")
+            .attr("points", "902.25049,222.98633 233.17773,222.98633 233.17773,364.71875 0,182.35938 233.17773,0 233.17773,141.73242 902.25049,141.73242 902.25049,222.98633 ")
+            .attr("id", "eastArrow")
+            .attr("fill", "green")
+            .attr("stroke", "black")
+    }
+    static defineGradient(defs) {
+        let gradient = defs.append("linearGradient").attr("id", "colorMap")
+        .attr("x2", "0%")
+        .attr("y1", "100%")
+        let start = gradient.append("stop")
+            .attr("offset", "0%")
+            .attr("stop-color", mapColorScale(0))
+        let stop = gradient.append("stop")
+            .attr("offset", "100%")
+            .attr("stop-color", mapColorScale(1))
+    }
+    appendColorMap() {
+        this.svg.append("rect").attr("x", "800").attr("y", "660").attr("width", "60").attr("height", "200").attr("fill", "url(#colorMap)")
     }
     makeProjection() {
         let scale = 2000 * Math.min(this.pxX / 1200, this.pxY / 1200)
@@ -71,6 +130,25 @@ class RegionMap {
         let g = this.regions.filter(`g.${region}`)
         g.selectAll("text.price").text(text)
 
+    }
+    // Dataset is the full array for that regions exports
+    updateFlowLabels(week) {
+        this.dataSet[week - 1].forEach((region, i) => {
+            region.forEach((flow, j) => {
+                let [arrow, label] = this.flowElements[i][j]
+                if (flow > 0) {
+                    arrow.attr("visibility", "hidden")
+                    label.attr("visibility", "hidden")
+                } else {
+                    arrow.attr("visibility", "visible")
+                    label.attr("visibility", "visible").text(-Math.floor(flow / 1000))
+                }
+            })
+        })
+
+    }
+    updateFlowData(dataSet) {
+        this.dataSet = dataSet
     }
 
 
