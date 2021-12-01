@@ -67,6 +67,7 @@ class Interactor {
             }
             this.regionMap.updateRegionLabel(zone, priceLabel)
         })
-        this.regionMap.updateFlowLabels(selectedWeek)
+        let year = d3.select("#selectYear").data()[0]
+        this.regionMap.updateFlowLabels(selectedWeek, year)
     }
 }

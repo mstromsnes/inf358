@@ -21,17 +21,21 @@ class Loader {
             getHydroData(year).then(hydroGraph.updateData.bind(hydroGraph)),
             getPriceData(year).then(priceGraph.updateData.bind(priceGraph)),
             getMinMaxData().then(hydroGraph.drawMinMax.bind(hydroGraph)),
-            getFlowData("2021").then(regionMap.updateFlowData.bind(regionMap))
+            getFlowData(year).then(regionMap.updateFlowData.bind(regionMap))
         ]).then(this.initalizeMap)
+        this.dropDown.data([year])
+        console.log(this.dropDown.data())
     }
     fillDropDown() {
         let loader = this
         this.dropDown.selectAll("option").data(Loader.years).enter().append("option").text(d => d).attr("value", d => d)
         this.dropDown.on("change", function () {
             loader.year = d3.select(this).property("value")
+            loader.dropDown.data([loader.year])
             Promise.all([
                 getHydroData(loader.year).then(loader.hydroGraph.updateData.bind(loader.hydroGraph)),
                 getPriceData(loader.year).then(loader.priceGraph.updateData.bind(loader.priceGraph)),
+                getFlowData(loader.year).then(loader.regionMap.updateFlowData.bind(loader.regionMap))
             ]).then(loader.initalizeMap)
         })
     }

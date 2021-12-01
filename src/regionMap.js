@@ -14,7 +14,7 @@ class RegionMap {
 
         d3.json(url).then(function (regionGeoJson) {
             this.regions = drawRegions(regionGeoJson, this.path)
-            this.flowElements = appendArrows(svg)
+            this.appendArrows(svg)
             console.log(this.flowElements)
         }.bind(this));
         function drawRegions(regionGeoJson, path) {
@@ -57,36 +57,6 @@ class RegionMap {
                 .attr("fill", "white")
             return g
         }
-        function appendArrows(svg) {
-            let flowElements = []
-            let g = svg.append("g").classed("flow", true)
-            regionBorder.forEach(function (region, i) {
-                let neighbourElements = []
-                region.forEach((location, j) => {
-                    let neighbour = regionAdjacency[expandedZones[i]][j]
-                    let [x, y, a] = location
-                    let width = 40
-                    let height = 20
-                    let arrow = g.append("use")
-                        .attr("href", "#westArrow")
-                        .attr("x", x).attr("y", y)
-                        .attr("transform", `translate(${width / 2},${height / 2}) translate(${x},${y}) rotate(${a}) translate(${-x},${-y}) translate(${-width / 2},${-height / 2})`)
-                        .classed(`${region}${neighbour}`, true)
-                    let label = appendLabel(g, region, neighbour, i, j)
-                    neighbourElements[j] = [arrow, label]
-                })
-                flowElements[i] = neighbourElements
-            })
-            function appendLabel(g, region, neighbour, i, j) {
-                let [x, y] = regionLabels[i][j]
-                return g.append("text")
-                    .attr("x", x).attr("y", y)
-                    .classed(`${region}${neighbour}`, true)
-                    .attr("fill", "white").text("593")
-
-            }
-            return flowElements
-        }
     }
     static defineArrow(defs) {
         defs.append("svg").attr("width", "40").attr("height", "20").attr("id", "westArrow").attr("viewBox", "0 0 902.25049 364.71875")
@@ -98,14 +68,60 @@ class RegionMap {
     }
     static defineGradient(defs) {
         let gradient = defs.append("linearGradient").attr("id", "colorMap")
-        .attr("x2", "0%")
-        .attr("y1", "100%")
+            .attr("x2", "0%")
+            .attr("y1", "100%")
         let start = gradient.append("stop")
             .attr("offset", "0%")
             .attr("stop-color", mapColorScale(0))
         let stop = gradient.append("stop")
             .attr("offset", "100%")
             .attr("stop-color", mapColorScale(1))
+    }
+    appendArrows(svg) {
+        this.flowElements = {
+            "2021": [],
+            "2020": [],
+            "2019": [],
+            "2018": [],
+            "2017": [],
+            "2016": [],
+            "2015": [],
+            "2014": [],
+            "2013": [],
+        }
+        let g = svg.append("g").classed("flow", true)
+        regionBorder.forEach(function (region, i) {
+            let neighbourElements = []
+            region.forEach((location, j) => {
+                let neighbour = regionAdjacency["2021"][expandedZones["2021"][i]][j]
+                let [x, y, a] = location
+                let width = 40
+                let height = 20
+                let arrow = g.append("use")
+                    .attr("href", "#westArrow")
+                    .attr("x", x).attr("y", y)
+                    .attr("transform", `translate(${width / 2},${height / 2}) translate(${x},${y}) rotate(${a}) translate(${-x},${-y}) translate(${-width / 2},${-height / 2})`)
+                    .classed(`${region}${neighbour}`, true)
+                let label = appendLabel(g, region, neighbour, i, j)
+                neighbourElements[j] = [arrow, label]
+            })
+            this.addFlowElements(neighbourElements, i)
+        }.bind(this))
+        function appendLabel(g, region, neighbour, i, j) {
+            let [x, y] = regionLabels[i][j]
+            return g.append("text")
+                .attr("x", x).attr("y", y)
+                .classed(`${region}${neighbour}`, true)
+                .attr("fill", "white").text("593")
+
+        }
+    }
+    addFlowElements(neighbours, i) {
+        years.forEach(year => {
+            let zone = expandedZones["2021"][i]
+            let index = expandedZones[year].findIndex(d=> d === zone)
+            this.flowElements[year][index] = neighbours
+        })
     }
     appendColorMap() {
         this.svg.append("rect").attr("x", "800").attr("y", "660").attr("width", "60").attr("height", "200").attr("fill", "url(#colorMap)")
@@ -132,20 +148,31 @@ class RegionMap {
 
     }
     // Dataset is the full array for that regions exports
-    updateFlowLabels(week) {
+    updateFlowLabels(week, year) {
+        this.hideFlow()
         this.dataSet[week - 1].forEach((region, i) => {
-            region.forEach((flow, j) => {
-                let [arrow, label] = this.flowElements[i][j]
-                if (flow > 0) {
-                    arrow.attr("visibility", "hidden")
-                    label.attr("visibility", "hidden")
-                } else {
-                    arrow.attr("visibility", "visible")
-                    label.attr("visibility", "visible").text(-Math.floor(flow / 1000))
+            region.forEach(function (flow, j) {
+                try {
+                    let [arrow, label] = this.flowElements[year][i][j]
+                    if (flow < 0) {
+                        arrow.attr("visibility", "visible")
+                        label.attr("visibility", "visible").text(-Math.floor(flow / 1000))
+                    }
+                } catch (e) {
+                    console.log(e)
                 }
-            })
+            }.bind(this))
         })
 
+    }
+    hideFlow() {
+        this.flowElements["2021"].forEach(d => {
+            d.forEach(h=> {
+                let [arrow, label] = h
+                arrow.attr("visibility", "hidden")
+                label.attr("visibility", "hidden")
+            })
+        })
     }
     updateFlowData(dataSet) {
         this.dataSet = dataSet
