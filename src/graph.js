@@ -33,6 +33,29 @@ class GraphSet {
             graph.drawMax(maxData)
         })
     }
+    drawVertical(week) {
+        console.log("Vert")
+        let x = this.subGraphs.get("NO1").scX(week)
+        let verticalLine = this.svg.selectAll("line").filter(".vertical")
+        let previousWeek = verticalLine.data()[0]
+        if (previousWeek != week)
+        verticalLine = verticalLine.data([week])
+
+        verticalLine.exit().remove()
+
+        verticalLine.enter().append("line")
+            .attr("x1", x)
+            .attr("y1", margin)
+            .attr("x2", x)
+            .attr("y2", this.pxY - margin)
+            .attr("pointer-events", "none")
+            .classed("vertical", true)
+            .style("stroke-width", 2)
+            .style("stroke", "green")
+            .style("fill", "none")
+
+        verticalLine.attr("x1", x).attr("x2", x)
+    }
 }
 
 class Graph {
@@ -152,4 +175,5 @@ class Graph {
     drawMax(maxData) {
         this.svg.call(Graph.drawLines, this, maxData, "max", "yellow")
     }
+
 }
