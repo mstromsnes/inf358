@@ -10,19 +10,23 @@ class Loader {
         2014,
         2013
     ]
-    constructor(dropDown, year, regionMap, hydroGraph, priceGraph) {
+    constructor(dropDown, year, regionMap, hydroGraph, priceGraph, expGraph) {
         this.dropDown = dropDown
         this.year = year
         this.regionMap = regionMap
         this.hydroGraph = hydroGraph
         this.priceGraph = priceGraph
+        this.expGraph = expGraph
         this.fillDropDown()
         // Load all data, then draw it.
         Promise.all([
-            getHydroData(year).then(hydroGraph.updateData.bind(hydroGraph)),
+            Promise.all([
+                getHydroData(year),
+                getMinMaxData()
+
+            ]).then(this.drawInitialHydro.bind(this)),
             getPriceData(year).then(priceGraph.updateData.bind(priceGraph)),
-            getMinMaxData().then(hydroGraph.drawMinMax.bind(hydroGraph)),
-            getFlowData(year).then(regionMap.updateFlowData.bind(regionMap)),
+            getFlowData(year).then(this.sendFlowData.bind(this)),
             this.regionMap.loadPromise  // The only data that gets loaded outside of here is on inital regionMap setup. This needs to happen before initialiseMap, so we await it here.
         ]).then(this.initalizeMap)
         this.dropDown.data([year])
@@ -38,11 +42,21 @@ class Loader {
                 // Reload data for new year then draw it, then reset the map to last timestamp
                 getHydroData(loader.year).then(loader.hydroGraph.updateData.bind(loader.hydroGraph)),
                 getPriceData(loader.year).then(loader.priceGraph.updateData.bind(loader.priceGraph)),
-                getFlowData(loader.year).then(loader.regionMap.updateFlowData.bind(loader.regionMap)),
+                getFlowData(loader.year).then(loader.sendFlowData.bind(loader)),
             ]).then(loader.initalizeMap)
         })
     }
-    initalizeMap(){
+    initalizeMap() {
         d3.selectAll("rect").dispatch("initialize")
+    }
+    sendFlowData(data) {
+        this.regionMap.updateFlowData.bind(this.regionMap)(data)
+        this.expGraph.updateData.bind(this.expGraph)(data.map(flow => flow.totalExport()))
+    }
+    drawInitialHydro(data) {
+        console.log(data)
+        let [hydro, minMax] = data
+        this.hydroGraph.updateData.bind(this.hydroGraph)(hydro)
+        this.hydroGraph.drawMinMax.bind(this.hydroGraph)(minMax)
     }
 }

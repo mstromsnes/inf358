@@ -57,12 +57,12 @@ function minMaxParser(d) {
 }
 
 function flowParse(d) {
-    let day = +(d.Date.slice(0,2))
-    let month = +(d.Date.slice(3,5))-1
-    let year = +(d.Date.slice(6,10))
+    let day = +(d.Date.slice(0, 2))
+    let month = +(d.Date.slice(3, 5)) - 1
+    let year = +(d.Date.slice(6, 10))
     let date = new Date()
     date.setFullYear(year, month, day)
-    let hour = +d.Hours.slice(0,2)
+    let hour = +d.Hours.slice(0, 2)
     date.setHours(hour, 0, 0, 0)
     let week = date.getWeek()
 
@@ -76,28 +76,28 @@ function flowParse(d) {
         let h = []
         neighbourStrings(zone, year).forEach((neighbour, j) => {
             let [imp, exp] = neighbour
-            let value = d[imp].replace(",",".") - d[exp].replace(",",".")
+            let value = d[imp].replace(",", ".") - d[exp].replace(",", ".")
             h[j] = value
         })
         f[i] = h
     })
     let flow = new Flow(date, f)
-    if (this[week-1] === undefined) {
-        this[week-1] = flow
+    if (this[week - 1] === undefined) {
+        this[week - 1] = flow
     } else {
-        this[week-1].add(flow)
+        this[week - 1].add(flow)
     }
     return this
 
     function neighbourStrings(zone, year) {
         let neighbours = regionAdjacency[year][zone]
-        return neighbours.map(neighbour=> {
+        return neighbours.map(neighbour => {
             return [`${neighbour} > ${zone}`, `${zone} > ${neighbour}`]
         })
 
     }
 }
-    async function getHydroData(year) {
+async function getHydroData(year) {
     return d3.csv(`../data/${year}/hydro_reservoir.csv`, hydroParse)
 }
 
@@ -116,7 +116,7 @@ async function getFlowData(year) {
 }
 
 class Flow {
-    constructor(date, f){
+    constructor(date, f) {
         this.date = date
         this.year = date.getFullYear()
         f.forEach((zone, i) => {
@@ -138,5 +138,17 @@ class Flow {
             callBack(this[region], index, this)
         })
 
+    }
+    totalExport() {
+        let exp = 0
+        zones[this.year].forEach(region => {
+            this[region].forEach((value) => {
+                exp += value
+            })
+        })
+        return {
+            week: this.week,
+            value: exp/1000 // TWh
+        }
     }
 }
