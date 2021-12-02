@@ -14,13 +14,68 @@ const years = [
     "2014",
     "2013",
 ]
-const zones = [
-    "NO1",
-    "NO2",
-    "NO3",
-    "NO4",
-    "NO5",
-]
+const zones = {
+    "2021": [
+        "NO1",
+        "NO2",
+        "NO3",
+        "NO4",
+        "NO5",
+    ],
+    "2020": [
+        "NO1",
+        "NO2",
+        "NO3",
+        "NO4",
+        "NO5",
+    ],
+    "2019": [
+        "NO1",
+        "NO2",
+        "NO3",
+        "NO4",
+        "NO5",
+    ],
+    "2018": [
+        "NO1",
+        "NO2",
+        "NO3",
+        "NO4",
+        "NO5",
+    ],
+    "2017": [
+        "NO1",
+        "NO2",
+        "NO3",
+        "NO4",
+        "NO5",
+    ],
+    "2016": [
+        "NO1",
+        "NO2",
+        "NO3",
+        "NO4",
+        "NO5",
+    ],
+    "2015": [
+        "NO1",
+        "NO2",
+        "NO3",
+        "NO4",
+    ],
+    "2014": [
+        "NO1",
+        "NO2",
+        "NO3",
+        "NO4",
+    ],
+    "2013": [
+        "NO1",
+        "NO2",
+        "NO3",
+        "NO4",
+    ],
+}
 const expandedZones = {
     "2021": [
         "NO1",
@@ -133,7 +188,7 @@ const circleColors = d3.scaleOrdinal().domain(["hydro", "price", "min", "max"]).
 // ]
 // const circleColors = d3.scaleOrdinal().domain(zones).range(colors)
 
-const margin = 40
+const margin = { top: 40, bottom: 40, left: 50, right: 0 }
 
 const regionAdjacency = {
     "2021": {

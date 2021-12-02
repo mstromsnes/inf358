@@ -1,16 +1,16 @@
 class Interactor {
-    constructor(regionMap, hydroGraph, priceGraph, flowData) {
+    constructor(regionMap, hydroGraph, priceGraph, exportGraph) {
         this.regionMap = regionMap
         this.hydroGraph = hydroGraph
         this.priceGraph = priceGraph
-        this.flowData = flowData
+        this.exportGraph = exportGraph
         this.installLinkHandler()
     }
     linkHandler(hotzone, graph) {
         hotzone
             .attr("cursor", "crosshair")
-            .attr("x", margin).attr("y", margin)
-            .attr("width", graph.pxX - margin).attr("height", graph.pxY - 2 * margin)
+            .attr("x", margin.left).attr("y", margin.top)
+            .attr("width", graph.pxX - margin.left - margin.right).attr("height", graph.pxY - margin.top - margin.bottom)
             .attr("visibility", "hidden")
             .attr("pointer-events", "all")
             .on("mousemove", function (event) {
@@ -37,12 +37,15 @@ class Interactor {
         this.mouseHeld = false
         this.hotzoneHydro = this.hydroGraph.svg.append("rect")
         this.hotzonePrice = this.priceGraph.svg.append("rect")
+        this.hotzoneExport = this.exportGraph.svg.append("rect")
 
         this.hotzoneHydro.call(this.linkHandler.bind(this), this.hydroGraph)
         this.hotzonePrice.call(this.linkHandler.bind(this), this.priceGraph)
+        this.hotzoneExport.call(this.linkHandler.bind(this), this.exportGraph)
 
     }
     updateMap(pt, graph) {
+        let year = d3.select("#selectYear").data()[0]
         let minimum = 5000
         let circle = graph.svg.selectAll("circle").each((d, i, n) => {
             let sel = d3.select(n[i])
@@ -51,7 +54,7 @@ class Interactor {
         }).filter((d, i, n) =>
             Math.abs(d3.select(n[i]).attr("cx") - pt[0]) == minimum)
         let selectedWeek = circle.data()[0].week
-        zones.forEach(zone => {
+        zones[year].forEach(zone => {
             let color, priceLabel
             try {
                 color = mapColorScale(this.hydroGraph.subGraphs.get(zone).data.filter(d => d.week == selectedWeek)[0].value)
@@ -67,10 +70,10 @@ class Interactor {
             }
             this.regionMap.updateRegionLabel(zone, priceLabel)
         })
-        let year = d3.select("#selectYear").data()[0]
         this.regionMap.updateFlowLabels(selectedWeek, year)
         this.hydroGraph.drawVertical(selectedWeek)
         this.priceGraph.drawVertical(selectedWeek)
+        this.exportGraph.drawVertical(selectedWeek)
 
     }
 }
