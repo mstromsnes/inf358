@@ -10,7 +10,7 @@ class Interactor {
         hotzone
             .attr("cursor", "crosshair")
             .attr("x", margin).attr("y", margin)
-            .attr("width", graph.pxX - margin).attr("height", graph.pxY - 2*margin)
+            .attr("width", graph.pxX - margin).attr("height", graph.pxY - 2 * margin)
             .attr("visibility", "hidden")
             .attr("pointer-events", "all")
             .on("mousemove", function (event) {
@@ -29,7 +29,7 @@ class Interactor {
                 this.mouseHeld = false
             }.bind(this))
             .on("initialize", function () {
-                let pt = [+hotzone.attr("width"),+hotzone.attr("height")/2]
+                let pt = [+hotzone.attr("width"), +hotzone.attr("height") / 2]
                 this.updateMap(pt, graph)
             }.bind(this))
     }
@@ -69,5 +69,8 @@ class Interactor {
         })
         let year = d3.select("#selectYear").data()[0]
         this.regionMap.updateFlowLabels(selectedWeek, year)
+        this.hydroGraph.drawVertical(selectedWeek)
+        this.priceGraph.drawVertical(selectedWeek)
+
     }
 }
