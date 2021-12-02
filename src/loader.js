@@ -17,11 +17,13 @@ class Loader {
         this.hydroGraph = hydroGraph
         this.priceGraph = priceGraph
         this.fillDropDown()
+        // Load all data, then draw it.
         Promise.all([
             getHydroData(year).then(hydroGraph.updateData.bind(hydroGraph)),
             getPriceData(year).then(priceGraph.updateData.bind(priceGraph)),
             getMinMaxData().then(hydroGraph.drawMinMax.bind(hydroGraph)),
-            getFlowData(year).then(regionMap.updateFlowData.bind(regionMap))
+            getFlowData(year).then(regionMap.updateFlowData.bind(regionMap)),
+            this.regionMap.loadPromise  // The only data that gets loaded outside of here is on inital regionMap setup. This needs to happen before initialiseMap, so we await it here.
         ]).then(this.initalizeMap)
         this.dropDown.data([year])
         console.log(this.dropDown.data())
@@ -33,9 +35,10 @@ class Loader {
             loader.year = d3.select(this).property("value")
             loader.dropDown.data([loader.year])
             Promise.all([
+                // Reload data for new year then draw it, then reset the map to last timestamp
                 getHydroData(loader.year).then(loader.hydroGraph.updateData.bind(loader.hydroGraph)),
                 getPriceData(loader.year).then(loader.priceGraph.updateData.bind(loader.priceGraph)),
-                getFlowData(loader.year).then(loader.regionMap.updateFlowData.bind(loader.regionMap))
+                getFlowData(loader.year).then(loader.regionMap.updateFlowData.bind(loader.regionMap)),
             ]).then(loader.initalizeMap)
         })
     }

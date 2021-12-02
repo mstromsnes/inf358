@@ -12,7 +12,7 @@ class RegionMap {
 
         this.appendColorMap()
 
-        d3.json(url).then(function (regionGeoJson) {
+        this.loadPromise = d3.json(url).then(function (regionGeoJson) {
             this.regions = drawRegions(regionGeoJson, this.path)
             this.appendArrows(svg)
             console.log(this.flowElements)
