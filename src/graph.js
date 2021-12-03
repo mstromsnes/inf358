@@ -1,8 +1,14 @@
+function findScale(data) {
+    let [min, max] = d3.extent(data, d => d.value)
+    min = Math.min(min, -max)
+    max = Math.max(max, -min)
+    return [min, max]
+}
 class GraphSet {
     constructor(svg, zones, color, fullScale) {
         this.svg = svg
         this.pxX = +svg.attr("width") - margin.left - margin.right;
-        this.pxY = +svg.attr("height") - margin.top// - margin.bottom;
+        this.pxY = +svg.attr("height") - margin.top
 
         this.subGraphs = new Map()
         zones.forEach((zone, i) => {
@@ -22,15 +28,25 @@ class GraphSet {
     }
     updateData(dataSet) {
         this.dataSet = dataSet
-        this.subGraphs.forEach((graph, region) => graph.updateData(this.dataMapper(region, this.dataSet)))
+        this.setScales(dataSet)
+        this.subGraphs.forEach((graph, region) => {
+            graph.extent = this.extent
+            graph.updateData(this.dataMapper(region, this.dataSet))
+        }
+        )
     }
-    drawMinMax(minMaxData) {
+    drawMinMax(minMaxData, relative) {
         this.minMaxData = minMaxData
         this.subGraphs.forEach((graph, region) => {
             let minData = this.dataMapper(region, minMaxData.min)
             let maxData = this.dataMapper(region, minMaxData.max)
-            graph.drawMin(minData)
-            graph.drawMax(maxData)
+            if (relative) {
+                this.transformData(graph, minData, maxData)
+            } else {
+                graph.drawMin(minData)
+                graph.drawMax(maxData)
+            }
+            graph.showMaxMin(!relative)
         })
     }
     drawVertical(week) {
@@ -55,6 +71,23 @@ class GraphSet {
 
         verticalLine.attr("x1", x).attr("x2", x)
     }
+    setScales(dataSet) {
+        let extent = []
+        let splitSets = zones["2021"].map(region => this.dataMapper(region, dataSet))
+        splitSets.forEach((data, i) => {
+            extent[i] = findScale(data)
+        })
+        this.extent = d3.max(extent)
+    }
+    transformData(graph, minData, maxData) {
+        let data = graph.data.map((d, i) => {
+            return {
+                week: d.week,
+                value: (d.value - minData[i].value) / (maxData[i].value - minData[i].value)
+            }
+        })
+        graph.updateData(data)
+    }
 }
 
 class Graph {
@@ -67,22 +100,18 @@ class Graph {
 
     }
     updateData(data) {
-        this.scX = d3.scaleLinear().domain([1, 53]).range([margin.left, this.pxX-margin.right])
         this.data = data
+        this.scX = d3.scaleLinear().domain([1, 53]).range([margin.left, this.pxX - margin.right])
         if (this.fullScale) {
-            this.scY = d3.scaleLinear().domain(this.findScale(data)).range([this.pxY, margin.top]).nice()
+            this.scY = d3.scaleLinear().domain(findScale(data)).range([this.pxY, margin.top]).nice()
+        } else if (d3.max(this.extent) > 1.2) {
+            this.scY = d3.scaleLinear().domain([0, this.extent[1]]).range([this.pxY, margin.top]).nice()
         } else {
             this.scY = d3.scaleLinear().domain([0, 1]).range([this.pxY, margin.top]).nice()
         }
         this.svg.call(Graph.drawAxis, this)
         this.svg.call(Graph.drawCircles, this)
         this.svg.call(Graph.drawLines, this, this.data, "primary", this.color)
-    }
-    findScale(data) {
-        let [min, max] = d3.extent(data, d => d.value)
-        min = Math.min(min, -max)
-        max = Math.max(max, -min)
-        return [min, max]
     }
     // The .call() way of calling does not pass allow this to exist, so functions may as well be static, as we pass in this explicitly as graph
     static drawAxis(selection, graph) {
@@ -158,10 +187,11 @@ class Graph {
 
         // Update existing lines
         lines.attr("d", lnMkr(data))
-        graph[lineName] = lines
+        lines = selection.selectAll(`path.${lineName}`)
+        graph[lineName] = [lines, color]
     }
-    showLines(show) {
-        show ? this.lines.attr("stroke", color) : this.lines.attr("stroke", "none")
+    showLines(show, lineName) {
+        show ? this[lineName][0].attr("stroke", this[lineName][1]) : this[lineName][0].attr("stroke", "none")
     }
     showCircles(show) {
         show ? this.circles.attr("fill", color) : this.circles.attr("fill", "none")
@@ -178,6 +208,10 @@ class Graph {
 
     drawMax(maxData) {
         this.svg.call(Graph.drawLines, this, maxData, "max", "yellow")
+    }
+    showMaxMin(show) {
+        this.showLines(show, "min")
+        this.showLines(show, "max")
     }
 
 }

@@ -15,7 +15,6 @@ class RegionMap {
         this.loadPromise = d3.json(url).then(function (regionGeoJson) {
             this.regions = drawRegions(regionGeoJson, this.path)
             this.appendArrows(svg)
-            console.log(this.flowElements)
         }.bind(this));
         function drawRegions(regionGeoJson, path) {
 
@@ -159,7 +158,6 @@ class RegionMap {
                         label.attr("visibility", "visible").text(-Math.floor(flow / 1000))
                     }
                 } catch (e) {
-                    console.log(e)
                 }
             }.bind(this))
         })

@@ -10,27 +10,24 @@ class Loader {
         2014,
         2013
     ]
-    constructor(dropDown, year, regionMap, hydroGraph, priceGraph, expGraph) {
+    constructor(dropDown, relative, year, regionMap, hydroGraph, priceGraph, expGraph) {
         this.dropDown = dropDown
         this.year = year
         this.regionMap = regionMap
         this.hydroGraph = hydroGraph
         this.priceGraph = priceGraph
         this.expGraph = expGraph
+        this.relative = relative
+        this.relative.on("change", ()=>{this.updateHydro.bind(this)(this.year)})
         this.fillDropDown()
         // Load all data, then draw it.
         Promise.all([
-            Promise.all([
-                getHydroData(year),
-                getMinMaxData()
-
-            ]).then(this.drawInitialHydro.bind(this)),
+            this.updateHydro(year),
             getPriceData(year).then(priceGraph.updateData.bind(priceGraph)),
             getFlowData(year).then(this.sendFlowData.bind(this)),
             this.regionMap.loadPromise  // The only data that gets loaded outside of here is on inital regionMap setup. This needs to happen before initialiseMap, so we await it here.
         ]).then(this.initalizeMap)
         this.dropDown.data([year])
-        console.log(this.dropDown.data())
     }
     fillDropDown() {
         let loader = this
@@ -39,8 +36,8 @@ class Loader {
             loader.year = d3.select(this).property("value")
             loader.dropDown.data([loader.year])
             Promise.all([
+                loader.updateHydro.bind(loader)(loader.year),
                 // Reload data for new year then draw it, then reset the map to last timestamp
-                getHydroData(loader.year).then(loader.hydroGraph.updateData.bind(loader.hydroGraph)),
                 getPriceData(loader.year).then(loader.priceGraph.updateData.bind(loader.priceGraph)),
                 getFlowData(loader.year).then(loader.sendFlowData.bind(loader)),
             ]).then(loader.initalizeMap)
@@ -53,10 +50,16 @@ class Loader {
         this.regionMap.updateFlowData.bind(this.regionMap)(data)
         this.expGraph.updateData.bind(this.expGraph)(data.map(flow => flow.totalExport()))
     }
-    drawInitialHydro(data) {
-        console.log(data)
+    drawHydro(data) {
+        let relative = this.relative.property('checked')
         let [hydro, minMax] = data
         this.hydroGraph.updateData.bind(this.hydroGraph)(hydro)
-        this.hydroGraph.drawMinMax.bind(this.hydroGraph)(minMax)
+        this.hydroGraph.drawMinMax.bind(this.hydroGraph)(minMax, relative)
+    }
+    updateHydro(year) {
+        return Promise.all([
+            getHydroData(year),
+            getMinMaxData()
+        ]).then(this.drawHydro.bind(this))
     }
 }

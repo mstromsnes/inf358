@@ -5,5 +5,5 @@ async function main() {
     let price = new GraphSet(d3.select("#priceGraphs"), zones["2021"], "green")
     let exp = new GraphSet(d3.select("#exportGraph"), ["NO"], "orange", true)
     let interactor = new Interactor(map, hydro, price, exp)
-    let loader = new Loader(d3.select("#selectYear"), 2021, map, hydro, price, exp)
+    let loader = new Loader(d3.select("#selectYear"), d3.select("#setRelative"), 2021, map, hydro, price, exp)
 }
