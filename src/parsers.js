@@ -134,7 +134,6 @@ class Flow {
     }
     forEach(callBack) {
         expandedZones[this.year].forEach((region, index, object) => {
-            // console.log(index)
             callBack(this[region], index, this)
         })
 

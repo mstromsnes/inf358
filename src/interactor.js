@@ -59,7 +59,7 @@ class Interactor {
             try {
                 color = mapColorScale(this.hydroGraph.subGraphs.get(zone).data.filter(d => d.week == selectedWeek)[0].value)
             } catch (e) {
-                color = "white"
+                color = "grey"
             }
             this.regionMap.updateRegionColor(zone, color)
 
