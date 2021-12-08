@@ -10,7 +10,7 @@ class Interactor {
         hotzone
             .attr("cursor", "crosshair")
             .attr("x", margin.left).attr("y", margin.top)
-            .attr("width", graph.pxX - margin.left - margin.right).attr("height", graph.pxY - margin.top - margin.bottom)
+            .attr("width", graph.pxX - margin.left - margin.right).attr("height", graph.pxY-margin.top)
             .attr("visibility", "hidden")
             .attr("pointer-events", "all")
             .on("mousemove", function (event) {

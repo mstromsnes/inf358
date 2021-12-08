@@ -103,7 +103,8 @@ class Graph {
         this.data = data
         this.scX = d3.scaleLinear().domain([1, 53]).range([margin.left, this.pxX - margin.right])
         if (this.fullScale) {
-            this.scY = d3.scaleLinear().domain(findScale(data)).range([this.pxY, margin.top]).nice()
+            this.scY = d3.scaleLinear().domain([-1000,1000]).range([this.pxY, margin.top]).nice()
+            // this.scY = d3.scaleLinear().domain(findScale(data)).range([this.pxY, margin.top]).nice()
         } else if (d3.max(this.extent) > 1.2) {
             this.scY = d3.scaleLinear().domain([0, this.extent[1]]).range([this.pxY, margin.top]).nice()
         } else {
